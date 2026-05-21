@@ -1,4 +1,5 @@
 // test-bot.js
+process.env.NODE_ENV = "test";
 require("dotenv").config({ path: ".env.development" });
 const { handleMessage } = require("./src/bot.handler");
 

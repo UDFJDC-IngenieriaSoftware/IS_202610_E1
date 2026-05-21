@@ -2,6 +2,11 @@
 const env = process.env.NODE_ENV || "development";
 
 function getWhatsAppService() {
+  if (env === "test") {
+    console.log("🏭 Usando Mock Service (pruebas offline)");
+    return require("./whatsapp-mock.service");
+  }
+  
   if (env === "production") {
     console.log("🏭 Usando Meta Business API (producción)");
     return require("./whatsapp.service");
