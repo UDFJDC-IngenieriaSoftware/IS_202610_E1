@@ -1,12 +1,46 @@
 // app.js
-require("dotenv").config();
+const env = process.env.NODE_ENV || "development";
+require("dotenv").config({ path: `.env.${env}` });
+require("dotenv").config(); // fallback a .env si falta alguna var
+
 const express = require("express");
 const { handleMessage } = require("./src/bot.handler");
 
 const app = express();
 app.use(express.json());
 
-// Verificación del webhook (Meta lo llama una vez)
+// ─── Solo en DEV — inicializa whatsapp-web.js ─────────────────
+if (env === "development") {
+  const { initClient } = require("./src/whatsapp-local.service");
+
+  initClient().then((client) => {
+    // Escucha mensajes entrantes directo de WhatsApp Web
+    client.on("message", async (msg) => {
+      if (msg.isGroupMsg || msg.isStatus || msg.broadcast) return;
+
+      // Adapta el formato al mismo que usa bot.handler.js
+      const fakeEntry = {
+        changes: [
+          {
+            value: {
+              messages: [
+                {
+                  from: msg.from.replace("@c.us", ""),
+                  type: "text",
+                  text: { body: msg.body },
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      await handleMessage(fakeEntry).catch(console.error);
+    });
+  });
+}
+
+// ─── Webhook para Meta API (prod) ────────────────────────────
 app.get("/webhook", (req, res) => {
   const {
     "hub.mode": mode,
@@ -20,21 +54,18 @@ app.get("/webhook", (req, res) => {
   res.sendStatus(403);
 });
 
-app.get("/", (req, res, next) => {
-  res.json({ status: "success", message: "funcionando!" });
-});
-
-// Recibir mensajes
 app.post("/webhook", async (req, res) => {
-  console.log("📨 POST recibido:", JSON.stringify(req.body, null, 2)); // ← agrega esto
-  res.sendStatus(200); // responder rápido a Meta
-
+  res.sendStatus(200);
   const entries = req.body?.entry ?? [];
   for (const entry of entries) {
     await handleMessage(entry).catch(console.error);
   }
 });
 
+app.get("/", (req, res) => {
+  res.json({ status: "success", message: "funcionando!", env });
+});
+
 app.listen(process.env.PORT, () => {
-  console.log(`🚀 Server running on port ${process.env.PORT}`);
+  console.log(`🚀 Server running on port ${process.env.PORT} [${env}]`);
 });

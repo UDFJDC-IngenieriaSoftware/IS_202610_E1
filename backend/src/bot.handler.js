@@ -1,5 +1,4 @@
-// src/bot.handler.js
-const { sendText, sendMenu } = require("./whatsapp.service");
+const { sendText, sendMenu } = require("./whatsapp.factory");
 
 const FAQ = {
   faq_horario: "🕐 Atendemos de Lunes a Viernes de 8am a 6pm.",
@@ -13,9 +12,8 @@ async function handleMessage(entry) {
   const message = change?.messages?.[0];
   if (!message) return;
 
-  const from = message.from; // número del usuario
+  const from = message.from;
 
-  // Mensaje de texto
   if (message.type === "text") {
     const texto = message.text.body.toLowerCase().trim();
     const triggers = ["hola", "inicio", "menu", "menú", "ayuda", "help"];
@@ -23,10 +21,24 @@ async function handleMessage(entry) {
     if (triggers.some((t) => texto.includes(t))) {
       return sendMenu(from);
     }
+
+    // En dev — maneja opciones numéricas del menú de texto
+    const opcionesTexto = {
+      1: FAQ.faq_horario,
+      2: FAQ.faq_precio,
+      3: FAQ.faq_ubicacion,
+      4: FAQ.faq_contacto,
+    };
+
+    if (opcionesTexto[texto]) {
+      await sendText(from, opcionesTexto[texto]);
+      return sendText(from, "¿Necesitas algo más? Escribe *menú* para volver.");
+    }
+
     return sendText(from, "👋 Escribe *hola* para ver el menú de opciones.");
   }
 
-  // Respuesta de lista interactiva
+  // Respuesta de lista interactiva (solo Meta API en prod)
   if (message.type === "interactive") {
     const itemId = message.interactive?.list_reply?.id;
     const respuesta = FAQ[itemId];

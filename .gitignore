@@ -39,3 +39,15 @@ Thumbs.db
 
 # Tooling
 .antigravitycli/
+.claude/settings.local.json
+
+# whatsapp-web.js session / cache
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Binaries / installers
+*.deb
+*.rpm
+*.dmg
+*.exe
+*.msi
