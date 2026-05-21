@@ -20,8 +20,13 @@ app.get("/webhook", (req, res) => {
   res.sendStatus(403);
 });
 
+app.get("/", (req, res, next) => {
+  res.json({ status: "success", message: "funcionando!" });
+});
+
 // Recibir mensajes
 app.post("/webhook", async (req, res) => {
+  console.log("📨 POST recibido:", JSON.stringify(req.body, null, 2)); // ← agrega esto
   res.sendStatus(200); // responder rápido a Meta
 
   const entries = req.body?.entry ?? [];

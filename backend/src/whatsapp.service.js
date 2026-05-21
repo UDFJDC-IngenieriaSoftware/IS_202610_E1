@@ -1,30 +1,35 @@
 // src/whatsapp.service.js
 const axios = require("axios");
 
-const BASE_URL = `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`;
-const HEADERS = {
-  Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-  "Content-Type": "application/json",
-};
-
+function getConfig() {
+  return {
+    url: `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    headers: {
+      Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+  };
+}
 // Enviar mensaje de texto simple
 async function sendText(to, text) {
+  const { headers, url } = getConfig();
   return axios.post(
-    BASE_URL,
+    url,
     {
       messaging_product: "whatsapp",
       to,
       type: "text",
       text: { body: text },
     },
-    { headers: HEADERS },
+    { headers },
   );
 }
 
 // Enviar lista interactiva (menú)
 async function sendMenu(to) {
+  const { url, headers } = getConfig();
   return axios.post(
-    BASE_URL,
+    url,
     {
       messaging_product: "whatsapp",
       to,
@@ -66,7 +71,7 @@ async function sendMenu(to) {
         },
       },
     },
-    { headers: HEADERS },
+    { headers },
   );
 }
 
