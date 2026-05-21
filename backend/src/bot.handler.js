@@ -16,6 +16,9 @@ async function handleMessage(entry) {
 
   if (message.type === "text") {
     const texto = message.text.body.toLowerCase().trim();
+
+    console.log(JSON.stringify({ texto }));
+
     const triggers = ["hola", "inicio", "menu", "menú", "ayuda", "help"];
 
     if (triggers.some((t) => texto.includes(t))) {
