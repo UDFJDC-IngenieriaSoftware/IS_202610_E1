@@ -4,55 +4,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: whatsapp_bot_backend
-    restart: unless-stopped
-    env_file:
-      - ./backend/.env
-    environment:
-      - PORT=3000
-      - NODE_ENV=test
-      # - NODE_ENV=development
-      # Rutas de Puppeteer configuradas en el Dockerfile para el bot local
-      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    container_name: mi_turno_backend
     volumes:
-      - ./backend:/app
-      - /app/node_modules # Evita que se sobrescriban las dependencias del contenedor con el host
-      - backend_wwebjs_auth:/app/.wwebjs_auth   # Persistencia para no tener que escanear el QR cada vez
+      - backend_wwebjs_auth:/app/.wwebjs_auth     # Persistencia para no tener que escanear el QR cada vez
       - backend_wwebjs_cache:/app/.wwebjs_cache
-    ports:
-      - "3000:3000"
     depends_on:
       - database
 
   # ─── DATABASE SERVICE (PostgreSQL) ──────────────────────────────────────
   database:
     image: postgres:16-alpine
-    container_name: whatsapp_bot_database
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=bot_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_password # Cambia esto en producción
+    container_name: mi_turno_database
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  # ─── PGADMIN SERVICE (PostgreSQL GUI) ──────────────────────────────────
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: whatsapp_bot_pgadmin
-    restart: unless-stopped
-    ports:
-      - "5050:80"
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
-      - PGADMIN_DEFAULT_PASSWORD=admin # Cambia esto en producción
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      - database
 
   # ─── NGINX SERVICE (Reverse Proxy) ──────────────────────────────────────
   nginx:
@@ -69,8 +33,6 @@ services:
 # ─── VOLUMES CONFIGURATION ────────────────────────────────────────────────
 volumes:
   postgres_data:
-    driver: local
-  pgadmin_data:
     driver: local
   backend_wwebjs_auth:
     driver: local

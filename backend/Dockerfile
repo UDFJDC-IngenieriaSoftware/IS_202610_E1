@@ -29,4 +29,5 @@ COPY . .
 EXPOSE 3000
 
 # Iniciar la aplicación
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
+# CMD ["npm", "start"]

@@ -4,74 +4,91 @@ Esta guía recopila los comandos más comunes para gestionar el ciclo de vida de
 
 ---
 
-## 🚀 1. Iniciar y Detener Servicios
+## 🚀 1. Iniciar y Detener Servicios por Entorno
 
-### Levantar los servicios en segundo plano (Recomendado)
-Inicia todos los contenedores definidos en el archivo `docker-compose.yml` en modo *detached* (segundo plano).
-```bash
-docker compose up -d
-```
+El proyecto ahora está modularizado mediante múltiples archivos de Docker Compose para separar limpiamente **Desarrollo** y **Producción**:
+*   **Desarrollo:** Combina `docker-compose.yml` (Base) + `docker-compose.dev.yml` (Desarrollo).
+*   **Producción:** Combina `docker-compose.yml` (Base) + `docker-compose.prod.yml` (Producción).
 
-### Levantar los servicios en primer plano
-Inicia los servicios mostrando la salida de logs directamente en la consola actual.
-```bash
-docker compose up
-```
+---
 
-### Reconstruir las imágenes antes de levantar
-Si has modificado el `Dockerfile`, las dependencias en `package.json` o algún archivo del código fuente del backend, usa este comando para reconstruir la imagen antes de iniciar.
-```bash
-docker compose up -d --build
-```
+### 💻 1.1 Entorno de DESARROLLO (Local)
 
-### Detener los servicios
-Detiene y elimina los contenedores activos del proyecto, pero conserva los volúmenes de datos (base de datos, caché del bot de WhatsApp, etc.).
-```bash
-docker compose down
-```
+En desarrollo se cargan las variables de `./backend/.env.development`, se montan los volúmenes locales en el contenedor para habilitar el *live-reload* en caliente del backend, se expone la base de datos para conexiones externas directas y se levanta **pgAdmin**.
 
-### Detener los servicios y eliminar volúmenes (Reinicio total)
-> [!WARNING]
-> Este comando eliminará todos los datos almacenados en la base de datos de PostgreSQL y la sesión activa de WhatsApp. Úsalo con precaución.
-```bash
-docker compose down -v
-```
-
-### 📦 Gestión de un solo contenedor/servicio específico
-No es necesario reiniciar todo el proyecto cuando realizas cambios en un único módulo. Puedes operar de forma individual sobre los servicios (`backend`, `database`, `nginx`, `pgadmin`):
-
-*   **Detener un solo servicio:**
-    Detiene temporalmente el contenedor sin eliminarlo de Docker.
+*   **Levantar desarrollo en segundo plano (Recomendado):**
     ```bash
-    docker compose stop <nombre_servicio>
-    # Ejemplo: docker compose stop backend
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    ```
+*   **Levantar desarrollo en primer plano (Ver logs en vivo):**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+    ```
+*   **Reconstruir imágenes de desarrollo antes de levantar:**
+    *(Útil si modificaste el Dockerfile o instalaste nuevos paquetes en package.json).*
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+    ```
+*   **Detener el entorno de desarrollo:**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+    ```
+*   **Detener desarrollo y eliminar volúmenes (Reinicio a cero de BD):**
+    > [!WARNING]
+    > Este comando eliminará todos los datos almacenados en la base de datos de pruebas local de PostgreSQL.
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
     ```
 
-*   **Iniciar un servicio detenido:**
+---
+
+### 🌐 1.2 Entorno de PRODUCCIÓN (Servidor)
+
+En producción se cargan las variables de `./backend/.env.production`, no se exponen puertos innecesarios hacia el exterior (el puerto de PostgreSQL queda privado dentro de la red interna de Docker), no se monta código local en caliente (se corre el compilado inmutable de la imagen) y se aplican políticas sólidas de reinicio `always`.
+
+*   **Levantar producción en segundo plano (Recomendado):**
     ```bash
-    docker compose start <nombre_servicio>
-    # Ejemplo: docker compose start backend
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    ```
+*   **Reconstruir imágenes de producción antes de levantar:**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+    ```
+*   **Detener el entorno de producción:**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.prod.yml down
     ```
 
-*   **Relanzar / Reiniciar un solo servicio:**
-    Hace un stop y un start rápido del contenedor especificado.
+---
+
+### 📦 1.3 Gestión de un solo contenedor/servicio específico
+
+Puedes interactuar con un único servicio en particular sin alterar el resto de los componentes activos, combinando los archivos del entorno en el que te encuentres:
+
+*   **Detener un solo servicio (en Desarrollo):**
     ```bash
-    docker compose restart <nombre_servicio>
-    # Ejemplo: docker compose restart backend
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml stop <nombre_servicio>
+    # Ejemplo: docker compose -f docker-compose.yml -f docker-compose.dev.yml stop backend
     ```
 
-*   **Reconstruir y levantar un solo servicio:**
-    Útil si realizaste cambios en el código del backend o en su Dockerfile y solo quieres regenerar ese contenedor específico de inmediato, sin afectar la base de datos ni los demás contenedores.
+*   **Iniciar un servicio detenido (en Desarrollo):**
     ```bash
-    docker compose up -d --build <nombre_servicio>
-    # Ejemplo: docker compose up -d --build backend
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml start <nombre_servicio>
     ```
 
-*   **Bajar y eliminar un solo contenedor:**
-    Detiene forzosamente y destruye el contenedor de ese servicio.
+*   **Relanzar / Reiniciar un solo servicio (en Desarrollo):**
     ```bash
-    docker compose rm -fs <nombre_servicio>
-    # Ejemplo: docker compose rm -fs backend
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml restart <nombre_servicio>
+    ```
+
+*   **Reconstruir y levantar un solo servicio (en Desarrollo):**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build <nombre_servicio>
+    ```
+
+*   **Bajar y eliminar un contenedor individual (en Desarrollo):**
+    ```bash
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml rm -fs <nombre_servicio>
     ```
 
 ---

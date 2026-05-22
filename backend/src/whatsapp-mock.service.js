@@ -12,7 +12,7 @@ async function sendMenu(to) {
 1️⃣ 🕐 Horarios
 2️⃣ 💰 Precios
 3️⃣ 📍 Ubicación
-4️⃣ 📞 Contacto
+4️⃣ 📞 Contacto test
   `.trim();
 
   return sendText(to, menuText);
