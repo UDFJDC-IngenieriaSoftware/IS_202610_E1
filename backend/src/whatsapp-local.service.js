@@ -3,6 +3,7 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const fs = require("fs");
 const path = require("path");
+const { mock } = require("node:test");
 
 let client = null;
 
@@ -22,7 +23,9 @@ function deleteLockFiles() {
     try {
       // Eliminación directa (a veces SingletonLock es un symlink roto y fs.existsSync da false pero sigue ahí)
       fs.unlinkSync(file);
-      console.log(`🧹 Eliminado archivo de bloqueo residual de Chromium: ${file}`);
+      console.log(
+        `🧹 Eliminado archivo de bloqueo residual de Chromium: ${file}`,
+      );
     } catch (err) {
       // Ignorar si el archivo no existe o ya fue eliminado
     }
@@ -40,7 +43,11 @@ async function initClient() {
     authStrategy: new LocalAuth(),
     puppeteer: {
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     },
   });
@@ -88,4 +95,36 @@ async function sendMenu(to) {
   return sendText(to, menuText);
 }
 
-module.exports = { sendText, sendMenu, initClient };
+async function sendTimeSlots() {
+  const mockTimeSlot = {
+    id: 4,
+    fecha: "2026-10-2",
+    horaInicio: "08:00:00",
+    horaFin: "09:00:00",
+    disponible: true,
+  };
+  const mockSlots = [mockTimeSlot, mockTimeSlot, mockTimeSlot];
+
+  return;
+}
+
+async function getServices(to) {
+  console.log("getServices");
+
+  const serviceMock = {
+    id: 2,
+    nombre: "Carlos Alarcón",
+    precio: 40e3,
+    duracion: 60,
+  };
+  const services = [serviceMock, serviceMock, serviceMock];
+
+  const text = services
+    .map((s) => s.nombre)
+    .map((s) => `servicio: ${s}`)
+    .join(" \n");
+
+  return sendText(to, text);
+}
+
+module.exports = { sendText, sendMenu, initClient, getServices };

@@ -1,3 +1,4 @@
+const { getServices } = require("./whatsapp-local.service");
 const { sendText, sendMenu } = require("./whatsapp.factory");
 
 const FAQ = {
@@ -5,6 +6,7 @@ const FAQ = {
   faq_precio: "💰 Nuestros planes inician desde $50.000 COP.",
   faq_ubicacion: "📍 Estamos en Calle 123 #45-67, Bogotá.",
   faq_contacto: "📞 Llámanos al 300-123-4567 o escribe a soporte@empresa.com",
+  fqa_servicios: { description: "servicios", callback: getServices },
 };
 
 async function handleMessage(entry) {
@@ -31,10 +33,15 @@ async function handleMessage(entry) {
       2: FAQ.faq_precio,
       3: FAQ.faq_ubicacion,
       4: FAQ.faq_contacto,
+      5: FAQ.fqa_servicios,
     };
 
     if (opcionesTexto[texto]) {
-      await sendText(from, opcionesTexto[texto]);
+      if (opcionesTexto[texto].callback) {
+        opcionesTexto[texto].callback(from);
+      } else {
+        await sendText(from, opcionesTexto[texto]);
+      }
       return sendText(from, "¿Necesitas algo más? Escribe *menú* para volver.");
     }
 
