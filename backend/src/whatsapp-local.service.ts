@@ -1,19 +1,19 @@
-// src/whatsapp-local.service.js
-const { Client, LocalAuth } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
-const fs = require("fs");
-const path = require("path");
-const BaseWhatsAppService = require("./whatsapp.interface");
+import { Client, LocalAuth } from "whatsapp-web.js";
+import * as qrcode from "qrcode-terminal";
+import * as fs from "fs";
+import * as path from "path";
+import { BaseWhatsAppService } from "./whatsapp.interface";
 
-class WhatsAppLocalService extends BaseWhatsAppService {
+export class WhatsAppLocalService extends BaseWhatsAppService {
+  private client: any = null;
+  private isInitializing: boolean = false;
+
   constructor() {
     super();
-    this.client = null;
-    this.isInitializing = false;
   }
 
   // ─── Limpieza de archivos de bloqueo residuales de Chromium ────
-  deleteLockFiles() {
+  private deleteLockFiles(): void {
     const sessionDir = path.join(process.cwd(), ".wwebjs_auth", "session");
     const lockFiles = [
       path.join(sessionDir, "SingletonLock"),
@@ -35,7 +35,7 @@ class WhatsAppLocalService extends BaseWhatsAppService {
   }
 
   // ─── Inicializa el cliente una sola vez ───────────────────────
-  async initClient() {
+  public async initClient(): Promise<any> {
     if (this.client) return this.client;
     
     // Evita inicializaciones en paralelo concurrentes
@@ -58,7 +58,7 @@ class WhatsAppLocalService extends BaseWhatsAppService {
       },
     });
 
-    this.client.on("qr", (qr) => {
+    this.client.on("qr", (qr: string) => {
       console.log("📱 Escanea el QR con tu WhatsApp:");
       qrcode.generate(qr, { small: true });
     });
@@ -78,7 +78,7 @@ class WhatsAppLocalService extends BaseWhatsAppService {
   }
 
   // ─── Enviar mensaje de texto simple ───────────────────────────
-  async sendText(to, text) {
+  public async sendText(to: string, text: string): Promise<any> {
     const c = await this.initClient();
     const numberId = await c.getNumberId(to);
     if (!numberId) {
@@ -89,7 +89,7 @@ class WhatsAppLocalService extends BaseWhatsAppService {
   }
 
   // ─── Enviar menú interactivo (texto formateado) ───────────────
-  async sendMenu(to) {
+  public async sendMenu(to: string): Promise<any> {
     const menuText = `
 🤖 *Asistente Virtual*
 ¿En qué puedo ayudarte hoy?
@@ -104,7 +104,7 @@ class WhatsAppLocalService extends BaseWhatsAppService {
   }
 
   // ─── Obtener y Enviar Lista de Servicios (Mock) ───────────────
-  async getServices(to) {
+  public async getServices(to: string): Promise<any> {
     const mockServicios = [
       { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
       { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
@@ -133,5 +133,3 @@ class WhatsAppLocalService extends BaseWhatsAppService {
     return this.sendText(to, mensaje.trim());
   }
 }
-
-module.exports = WhatsAppLocalService;

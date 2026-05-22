@@ -1,11 +1,12 @@
-// test-bot.js
 process.env.NODE_ENV = "test";
-require("dotenv").config({ path: ".env.development" });
-const { handleMessage } = require("./src/bot.handler");
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.development" });
 
-async function simular(texto) {
+import { handleMessage, WebhookEntry } from "./src/bot.handler";
+
+async function simular(texto: string): Promise<void> {
   console.log(`\n👤 Usuario: "${texto}"`);
-  const fakeEntry = {
+  const fakeEntry: WebhookEntry = {
     changes: [
       {
         value: {
@@ -23,7 +24,7 @@ async function simular(texto) {
   await handleMessage(fakeEntry);
 }
 
-async function main() {
+async function main(): Promise<void> {
   await simular("hola");
   await simular("1");
   await simular("2");

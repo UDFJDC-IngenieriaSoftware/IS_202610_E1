@@ -1,18 +1,17 @@
-// src/whatsapp-mock.service.js
-const BaseWhatsAppService = require("./whatsapp.interface");
+import { BaseWhatsAppService } from "./whatsapp.interface";
 
-class WhatsAppMockService extends BaseWhatsAppService {
+export class WhatsAppMockService extends BaseWhatsAppService {
   constructor() {
     super();
   }
 
   // ─── Enviar mensaje de texto simple (Mock offline) ────────────
-  async sendText(to, text) {
+  public async sendText(to: string, text: string): Promise<any> {
     console.log(`💬 [Mock Bot a ${to}]: ${text}`);
   }
 
   // ─── Enviar menú (Mock offline) ───────────────────────────────
-  async sendMenu(to) {
+  public async sendMenu(to: string): Promise<any> {
     const menuText = `
 🤖 *Asistente Virtual*
 ¿En qué puedo ayudarte hoy?
@@ -27,7 +26,7 @@ class WhatsAppMockService extends BaseWhatsAppService {
   }
 
   // ─── Obtener y Enviar Lista de Servicios (Mock offline) ────────
-  async getServices(to) {
+  public async getServices(to: string): Promise<any> {
     const mockServicios = [
       { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
       { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
@@ -56,5 +55,3 @@ class WhatsAppMockService extends BaseWhatsAppService {
     return this.sendText(to, mensaje.trim());
   }
 }
-
-module.exports = WhatsAppMockService;

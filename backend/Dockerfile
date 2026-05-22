@@ -18,16 +18,16 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
-# Copiar archivos de dependencias e instalar
+# Copiar archivos de dependencias e instalar todas (incluyendo dev para compilar y ejecutar tsx)
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
-# Copiar el resto del código
+# Copiar el resto del código y compilar a JS
 COPY . .
+RUN npm run build
 
 # Exponer el puerto del backend
 EXPOSE 3000
 
-# Iniciar la aplicación
+# Iniciar la aplicación en modo desarrollo por defecto (sobrescribible en docker-compose.prod.yml)
 CMD ["npm", "run", "dev"]
-# CMD ["npm", "start"]

@@ -1,10 +1,10 @@
-const sequelize = require("../config/database");
-const Cliente = require("./Cliente");
-const Servicio = require("./Servicio");
-const Horario = require("./Horario");
-const Cita = require("./Cita");
-const Pago = require("./Pago");
-const Notificacion = require("./Notificacion");
+import sequelize from "../config/database";
+import Cliente from "./Cliente";
+import Servicio from "./Servicio";
+import Horario from "./Horario";
+import Cita from "./Cita";
+import Pago from "./Pago";
+import Notificacion from "./Notificacion";
 
 // ─── DEFINICIÓN DE RELACIONES Y ASOCIACIONES ─────────────────────────────
 
@@ -28,7 +28,7 @@ Pago.belongsTo(Cita, { foreignKey: "citaId", as: "cita" });
 Cita.hasMany(Notificacion, { foreignKey: "citaId", as: "notificaciones" });
 Notificacion.belongsTo(Cita, { foreignKey: "citaId", as: "cita" });
 
-module.exports = {
+export {
   sequelize,
   Cliente,
   Servicio,

@@ -1,14 +1,13 @@
-// src/whatsapp.service.js
-const axios = require("axios");
-const BaseWhatsAppService = require("./whatsapp.interface");
+import axios from "axios";
+import { BaseWhatsAppService } from "./whatsapp.interface";
 
-class WhatsAppCloudService extends BaseWhatsAppService {
+export class WhatsAppCloudService extends BaseWhatsAppService {
   constructor() {
     super();
   }
 
   // Obtiene los headers y url dinámicamente según las variables de entorno actuales
-  getConfig() {
+  private getConfig(): { url: string; headers: Record<string, string> } {
     return {
       url: `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`,
       headers: {
@@ -19,7 +18,7 @@ class WhatsAppCloudService extends BaseWhatsAppService {
   }
 
   // ─── Enviar mensaje de texto simple (Meta API) ────────────────
-  async sendText(to, text) {
+  public async sendText(to: string, text: string): Promise<any> {
     const { headers, url } = this.getConfig();
     return axios.post(
       url,
@@ -34,7 +33,7 @@ class WhatsAppCloudService extends BaseWhatsAppService {
   }
 
   // ─── Enviar lista interactiva (Menú - Meta API) ───────────────
-  async sendMenu(to) {
+  public async sendMenu(to: string): Promise<any> {
     const { url, headers } = this.getConfig();
     return axios.post(
       url,
@@ -84,7 +83,7 @@ class WhatsAppCloudService extends BaseWhatsAppService {
   }
 
   // ─── Obtener y Enviar Lista de Servicios (Meta API - Texto) ─────
-  async getServices(to) {
+  public async getServices(to: string): Promise<any> {
     const mockServicios = [
       { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
       { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
@@ -113,5 +112,3 @@ class WhatsAppCloudService extends BaseWhatsAppService {
     return this.sendText(to, mensaje.trim());
   }
 }
-
-module.exports = WhatsAppCloudService;

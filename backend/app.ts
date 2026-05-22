@@ -1,26 +1,25 @@
-// app.js
+import * as dotenv from "dotenv";
 const env = process.env.NODE_ENV || "development";
-require("dotenv").config({ path: `.env.${env}` });
-require("dotenv").config(); // fallback a .env si falta alguna var
+dotenv.config({ path: `.env.${env}` });
+dotenv.config(); // fallback a .env si falta alguna var
 
-const express = require("express");
-const { handleMessage } = require("./src/bot.handler");
-const { sequelize } = require("./src/models");
+import express, { Request, Response } from "express";
+import { handleMessage, WebhookEntry } from "./src/bot.handler";
+import { sequelize } from "./src/models";
+import whatsappService from "./src/whatsapp.factory";
 
 const app = express();
 app.use(express.json());
 
 // ─── Solo en DEV — inicializa whatsapp-web.js ─────────────────
 if (env === "development") {
-  const whatsappService = require("./src/whatsapp.factory");
-
-  whatsappService.initClient().then((client) => {
+  (whatsappService as any).initClient().then((client: any) => {
     // Escucha mensajes entrantes directo de WhatsApp Web
-    client.on("message", async (msg) => {
+    client.on("message", async (msg: any) => {
       if (msg.isGroupMsg || msg.isStatus || msg.broadcast) return;
 
       // Adapta el formato al mismo que usa bot.handler.js
-      const fakeEntry = {
+      const fakeEntry: WebhookEntry = {
         changes: [
           {
             value: {
@@ -38,38 +37,39 @@ if (env === "development") {
 
       await handleMessage(fakeEntry).catch(console.error);
     });
-  });
+  }).catch(console.error);
 }
 
 // ─── Webhook para Meta API (prod) ────────────────────────────
-app.get("/webhook", (req, res) => {
-  const {
-    "hub.mode": mode,
-    "hub.verify_token": token,
-    "hub.challenge": challenge,
-  } = req.query;
+app.get("/webhook", (req: Request, res: Response) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
   if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) {
     console.log("✅ Webhook verificado");
     return res.status(200).send(challenge);
   }
-  res.sendStatus(403);
+  return res.sendStatus(403);
 });
 
-app.post("/webhook", async (req, res) => {
+app.post("/webhook", async (req: Request, res: Response) => {
   console.log("POST webhook");
 
   res.sendStatus(200);
-  const entries = req.body?.entry ?? [];
+  const entries: WebhookEntry[] = req.body?.entry ?? [];
   for (const entry of entries) {
     await handleMessage(entry).catch(console.error);
   }
 });
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   res.json({ status: "success", message: "funcionando!", env });
 });
 
 // ─── Conexión e Inicialización de la Base de Datos ──────────────────────
+const PORT = process.env.PORT || 3000;
+
 sequelize
   .authenticate()
   .then(() => {
@@ -83,11 +83,11 @@ sequelize
     }
   })
   .then(() => {
-    app.listen(process.env.PORT, () => {
-      console.log(`🚀 Server running on port ${process.env.PORT} [${env}]`);
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT} [${env}]`);
     });
   })
-  .catch((err) => {
+  .catch((err: any) => {
     console.error(
       "❌ Error al iniciar la aplicación o conectar con PostgreSQL:",
       err,
@@ -97,9 +97,9 @@ sequelize
       process.exit(1);
     } else {
       // En desarrollo levantamos el servidor de todos modos para que el desarrollador pueda depurar
-      app.listen(process.env.PORT, () => {
+      app.listen(PORT, () => {
         console.log(
-          `🚀 Server running on port ${process.env.PORT} [${env}] (Sin conexión a BD)`,
+          `🚀 Server running on port ${PORT} [${env}] (Sin conexión a BD)`,
         );
       });
     }
