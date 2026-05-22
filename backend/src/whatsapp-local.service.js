@@ -10,7 +10,11 @@ async function initClient() {
 
   client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true },
+    puppeteer: {
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    },
   });
 
   client.on("qr", (qr) => {
