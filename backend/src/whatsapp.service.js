@@ -1,78 +1,117 @@
 // src/whatsapp.service.js
 const axios = require("axios");
+const BaseWhatsAppService = require("./whatsapp.interface");
 
-function getConfig() {
-  return {
-    url: `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`,
-    headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-  };
-}
-// Enviar mensaje de texto simple
-async function sendText(to, text) {
-  const { headers, url } = getConfig();
-  return axios.post(
-    url,
-    {
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: text },
-    },
-    { headers },
-  );
-}
+class WhatsAppCloudService extends BaseWhatsAppService {
+  constructor() {
+    super();
+  }
 
-// Enviar lista interactiva (menú)
-async function sendMenu(to) {
-  const { url, headers } = getConfig();
-  return axios.post(
-    url,
-    {
-      messaging_product: "whatsapp",
-      to,
-      type: "interactive",
-      interactive: {
-        type: "list",
-        header: { type: "text", text: "🤖 Asistente Virtual" },
-        body: { text: "¿En qué puedo ayudarte hoy?" },
-        footer: { text: "Selecciona una opción" },
-        action: {
-          button: "Ver opciones",
-          sections: [
-            {
-              title: "Información",
-              rows: [
-                {
-                  id: "faq_horario",
-                  title: "🕐 Horarios",
-                  description: "Ver nuestros horarios",
-                },
-                {
-                  id: "faq_precio",
-                  title: "💰 Precios",
-                  description: "Consultar tarifas",
-                },
-                {
-                  id: "faq_ubicacion",
-                  title: "📍 Ubicación",
-                  description: "Cómo llegar",
-                },
-                {
-                  id: "faq_contacto",
-                  title: "📞 Contacto",
-                  description: "Hablar con un agente",
-                },
-              ],
-            },
-          ],
+  // Obtiene los headers y url dinámicamente según las variables de entorno actuales
+  getConfig() {
+    return {
+      url: `https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`,
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    };
+  }
+
+  // ─── Enviar mensaje de texto simple (Meta API) ────────────────
+  async sendText(to, text) {
+    const { headers, url } = this.getConfig();
+    return axios.post(
+      url,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { body: text },
+      },
+      { headers }
+    );
+  }
+
+  // ─── Enviar lista interactiva (Menú - Meta API) ───────────────
+  async sendMenu(to) {
+    const { url, headers } = this.getConfig();
+    return axios.post(
+      url,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "🤖 Asistente Virtual" },
+          body: { text: "¿En qué puedo ayudarte hoy?" },
+          footer: { text: "Selecciona una opción" },
+          action: {
+            button: "Ver opciones",
+            sections: [
+              {
+                title: "Información",
+                rows: [
+                  {
+                    id: "faq_horario",
+                    title: "🕐 Horarios",
+                    description: "Ver nuestros horarios",
+                  },
+                  {
+                    id: "faq_precio",
+                    title: "💰 Precios",
+                    description: "Consultar tarifas",
+                  },
+                  {
+                    id: "faq_ubicacion",
+                    title: "📍 Ubicación",
+                    description: "Cómo llegar",
+                  },
+                  {
+                    id: "faq_contacto",
+                    title: "📞 Contacto",
+                    description: "Hablar con un agente",
+                  },
+                ],
+              },
+            ],
+          },
         },
       },
-    },
-    { headers },
-  );
+      { headers }
+    );
+  }
+
+  // ─── Obtener y Enviar Lista de Servicios (Meta API - Texto) ─────
+  async getServices(to) {
+    const mockServicios = [
+      { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
+      { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
+      { nombre: "Combo Corte + Barba + Bebida", precio: 35000, duracion: 45 },
+      { nombre: "Corte Infantil", precio: 18000, duracion: 25 },
+      { nombre: "Lavado e Hidratación Capilar", precio: 12000, duracion: 15 },
+    ];
+
+    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
+    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
+
+    mockServicios.forEach((serv) => {
+      const precioFormateado = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0,
+      }).format(serv.precio);
+
+      mensaje += `🔹 *${serv.nombre}*\n`;
+      mensaje += `   💵 Precio: ${precioFormateado}\n`;
+      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
+    });
+
+    mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;
+
+    return this.sendText(to, mensaje.trim());
+  }
 }
 
-module.exports = { sendText, sendMenu };
+module.exports = WhatsAppCloudService;

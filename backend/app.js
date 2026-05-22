@@ -12,9 +12,9 @@ app.use(express.json());
 
 // ─── Solo en DEV — inicializa whatsapp-web.js ─────────────────
 if (env === "development") {
-  const { initClient } = require("./src/whatsapp-local.service");
+  const whatsappService = require("./src/whatsapp.factory");
 
-  initClient().then((client) => {
+  whatsappService.initClient().then((client) => {
     // Escucha mensajes entrantes directo de WhatsApp Web
     client.on("message", async (msg) => {
       if (msg.isGroupMsg || msg.isStatus || msg.broadcast) return;

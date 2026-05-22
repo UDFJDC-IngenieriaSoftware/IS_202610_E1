@@ -25,9 +25,9 @@ async function simular(texto) {
 
 async function main() {
   await simular("hola");
-  // await simular("1");
-  // await simular("2");
-  // await simular("ubicacion");
+  await simular("1");
+  await simular("2");
+  await simular("ubicacion");
 }
 
 main().catch(console.error);
