@@ -3,6 +3,7 @@ import * as qrcode from "qrcode-terminal";
 import * as fs from "fs";
 import * as path from "path";
 import { BaseWhatsAppService } from "./whatsapp.interface";
+import procedureService from "./services/procedure.service";
 
 export class WhatsAppLocalService extends BaseWhatsAppService {
   private client: any = null;
@@ -27,7 +28,9 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
     lockFiles.forEach((file) => {
       try {
         fs.unlinkSync(file);
-        console.log(`🧹 [Local Bot] Eliminado archivo de bloqueo residual de Chromium: ${file}`);
+        console.log(
+          `🧹 [Local Bot] Eliminado archivo de bloqueo residual de Chromium: ${file}`,
+        );
       } catch (err) {
         // Ignorar si el archivo no existe o ya fue eliminado
       }
@@ -37,7 +40,7 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
   // ─── Inicializa el cliente una sola vez ───────────────────────
   public async initClient(): Promise<any> {
     if (this.client) return this.client;
-    
+
     // Evita inicializaciones en paralelo concurrentes
     if (this.isInitializing) {
       while (this.isInitializing) {
@@ -53,7 +56,11 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
       authStrategy: new LocalAuth(),
       puppeteer: {
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       },
     });
@@ -105,26 +112,21 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
 
   // ─── Obtener y Enviar Lista de Servicios (Mock) ───────────────
   public async getServices(to: string): Promise<any> {
-    const mockServicios = [
-      { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
-      { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
-      { nombre: "Combo Corte + Barba + Bebida", precio: 35000, duracion: 45 },
-      { nombre: "Corte Infantil", precio: 18000, duracion: 25 },
-      { nombre: "Lavado e Hidratación Capilar", precio: 12000, duracion: 15 },
-    ];
+    const procedures = await procedureService.getAllProcedures();
 
     let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
     mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
 
-    mockServicios.forEach((serv) => {
+    procedures.forEach((serv, index) => {
       const precioFormateado = new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
         minimumFractionDigits: 0,
       }).format(serv.precio);
 
+      mensaje += `${index}. \n`;
       mensaje += `🔹 *${serv.nombre}*\n`;
-      mensaje += `   💵 Precio: ${precioFormateado}\n`;
+      mensaje += `   💵 Precio ${precioFormateado}\n`;
       mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
     });
 
