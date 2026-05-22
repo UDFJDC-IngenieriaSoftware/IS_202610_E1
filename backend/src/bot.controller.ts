@@ -1,4 +1,7 @@
 import whatsappService from "./whatsapp.factory";
+import { ProcedureService } from "./services/procedure.service";
+
+const procedureService = new ProcedureService();
 
 export interface WebhookMessage {
   from: string;
@@ -47,7 +50,8 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
     }
 
     if (texto === "2" || texto.includes("precio") || texto.includes("servicio")) {
-      return whatsappService.getServices(from);
+      const mensaje = await procedureService.getServicesMenuText();
+      return whatsappService.sendText(from, mensaje);
     }
 
     // En dev — maneja opciones numéricas del menú de texto

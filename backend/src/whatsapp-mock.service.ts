@@ -24,34 +24,4 @@ export class WhatsAppMockService extends BaseWhatsAppService {
 
     return this.sendText(to, menuText);
   }
-
-  // ─── Obtener y Enviar Lista de Servicios (Mock offline) ────────
-  public async getServices(to: string): Promise<any> {
-    const mockServicios = [
-      { nombre: "Corte de Cabello Premium", precio: 25000, duracion: 30 },
-      { nombre: "Barba y Toalla Caliente", precio: 15000, duracion: 20 },
-      { nombre: "Combo Corte + Barba + Bebida", precio: 35000, duracion: 45 },
-      { nombre: "Corte Infantil", precio: 18000, duracion: 25 },
-      { nombre: "Lavado e Hidratación Capilar", precio: 12000, duracion: 15 },
-    ];
-
-    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
-    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
-
-    mockServicios.forEach((serv) => {
-      const precioFormateado = new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 0,
-      }).format(serv.precio);
-
-      mensaje += `🔹 *${serv.nombre}*\n`;
-      mensaje += `   💵 Precio: ${precioFormateado}\n`;
-      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
-    });
-
-    mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;
-
-    return this.sendText(to, mensaje.trim());
-  }
 }

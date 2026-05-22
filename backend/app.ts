@@ -4,7 +4,7 @@ dotenv.config({ path: `.env.${env}` });
 dotenv.config(); // fallback a .env si falta alguna var
 
 import express, { Request, Response } from "express";
-import { handleMessage, WebhookEntry } from "./src/bot.handler";
+import { handleMessage, WebhookEntry } from "./src/bot.controller";
 import { sequelize } from "./src/models";
 import whatsappService from "./src/whatsapp.factory";
 
@@ -18,7 +18,7 @@ if (env === "development") {
     client.on("message", async (msg: any) => {
       if (msg.isGroupMsg || msg.isStatus || msg.broadcast) return;
 
-      // Adapta el formato al mismo que usa bot.handler.js
+      // Adapta el formato al mismo que usa bot.controller.ts
       const fakeEntry: WebhookEntry = {
         changes: [
           {

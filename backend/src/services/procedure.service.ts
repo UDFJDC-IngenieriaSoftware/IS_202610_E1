@@ -1,7 +1,7 @@
-import { ServicioAttributes } from "../models/Servicio";
+import Servicio, { ServicioAttributes } from "../models/Servicio";
 
-class Procedure {
-  constructor() {}
+export class ProcedureService {
+  constructor(private procedureModel: Servicio) {}
 
   async getAllProcedures(): Promise<ServicioAttributes[]> {
     const mockServicios = [
@@ -34,6 +34,31 @@ class Procedure {
     return mockServicios;
   }
 
+  async getServicesMenuText(): Promise<string> {
+    const procedures = await Servicio.findAll({ raw: true });
+
+    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
+    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
+
+    procedures.forEach((serv) => {
+      console.log(serv);
+
+      const precioFormateado = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0,
+      }).format(serv.precio);
+
+      mensaje += `🔹 *${serv.nombre}*\n`;
+      mensaje += `   💵 Precio: ${precioFormateado}\n`;
+      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
+    });
+
+    mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;
+
+    return mensaje.trim();
+  }
+
   async selectProcedure(idProcedure: string): Promise<ServicioAttributes> {
     return {
       id: "1",
@@ -47,5 +72,3 @@ class Procedure {
     return true;
   }
 }
-
-export default new Procedure();

@@ -7,7 +7,12 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "tsx watch app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migration:generate": "sequelize-cli migration:generate --name",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "seed": "sequelize-cli db:seed:all",
+    "seed:undo": "sequelize-cli db:seed:undo:all"
   },
   "author": "",
   "license": "ISC",
@@ -25,6 +30,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.1",
     "@types/pg": "^8.20.0",
+    "sequelize-cli": "^6.6.5",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   }

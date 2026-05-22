@@ -2,7 +2,7 @@
 
 ## Stack
 
-- Node.js + Express
+- Node.js + Express + TypeScript + tsx
 - whatsapp-web.js (dev)
 - Meta Business API (prod)
 - AWS EC2 (producción)
@@ -11,20 +11,23 @@
 
 backend/
 ├── src/
-│ ├── bot.handler.js # lógica del bot, no cambia entre envs
-│ ├── whatsapp.factory.js # decide qué servicio usar según NODE_ENV
-│ ├── whatsapp.service.js # Meta API (prod)
-│ └── whatsapp-local.service.js # whatsapp-web.js (dev)
+│   ├── bot.controller.ts       # lógica del bot/webhook (Controlador)
+│   ├── whatsapp.factory.ts     # decide qué servicio usar según NODE_ENV
+│   ├── whatsapp.service.ts     # Meta API (prod)
+│   ├── whatsapp-local.service.ts # whatsapp-web.js (dev)
+│   └── services/
+│       └── procedure.service.ts  # servicios de dominio (Procedimientos/Servicios)
 ├── .env.development
 ├── .env.production
-└── app.js
+└── app.ts
 
 ## Decisiones importantes
 
-- Factory pattern para alternar entre dev/prod sin tocar bot.handler.js
+- Factory pattern para alternar entre dev/prod sin tocar bot.controller.ts
 - En dev: whatsapp-web.js escucha mensajes directo, no necesita webhook
 - En prod: Meta API requiere webhook HTTPS (EC2 + Nginx + Certbot)
-- bot.handler.js adapta formato de whatsapp-web.js al mismo que usa Meta
+- bot.controller.ts adapta el formato de whatsapp-web.js al mismo que usa Meta
+- Orquestación en el bot.controller: Maneja la lógica llamando directamente a los servicios de dominio (como ProcedureService) y usando whatsappService meramente como canal de entrega.
 
 ## Pendiente
 

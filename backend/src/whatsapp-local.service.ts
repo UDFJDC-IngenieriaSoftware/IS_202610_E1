@@ -3,7 +3,6 @@ import * as qrcode from "qrcode-terminal";
 import * as fs from "fs";
 import * as path from "path";
 import { BaseWhatsAppService } from "./whatsapp.interface";
-import procedureService from "./services/procedure.service";
 
 export class WhatsAppLocalService extends BaseWhatsAppService {
   private client: any = null;
@@ -108,30 +107,5 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
     `.trim();
 
     return this.sendText(to, menuText);
-  }
-
-  // ─── Obtener y Enviar Lista de Servicios (Mock) ───────────────
-  public async getServices(to: string): Promise<any> {
-    const procedures = await procedureService.getAllProcedures();
-
-    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
-    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
-
-    procedures.forEach((serv, index) => {
-      const precioFormateado = new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 0,
-      }).format(serv.precio);
-
-      mensaje += `${index}. \n`;
-      mensaje += `🔹 *${serv.nombre}*\n`;
-      mensaje += `   💵 Precio ${precioFormateado}\n`;
-      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
-    });
-
-    mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;
-
-    return this.sendText(to, mensaje.trim());
   }
 }

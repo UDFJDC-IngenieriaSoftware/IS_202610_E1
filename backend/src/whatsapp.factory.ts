@@ -10,9 +10,11 @@ function getWhatsAppServiceInstance(): BaseWhatsAppService {
     console.log("🏭 Fábrica: Instanciando Mock Service (pruebas offline)");
     return new WhatsAppMockService();
   }
-  
+
   if (env === "production") {
-    console.log("🏭 Fábrica: Instanciando Meta Business API Service (producción)");
+    console.log(
+      "🏭 Fábrica: Instanciando Meta Business API Service (producción)",
+    );
     return new WhatsAppCloudService();
   }
 

@@ -2,7 +2,7 @@ process.env.NODE_ENV = "test";
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.development" });
 
-import { handleMessage, WebhookEntry } from "./src/bot.handler";
+import { handleMessage, WebhookEntry } from "./src/bot.controller";
 
 async function simular(texto: string): Promise<void> {
   console.log(`\n👤 Usuario: "${texto}"`);
