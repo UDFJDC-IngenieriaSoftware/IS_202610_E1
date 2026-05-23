@@ -2,10 +2,11 @@ import { BotState, UserSession } from "./bot.types";
 import { Servicio, Cliente, Barbero, Horario, Cita } from "../models";
 import { ProcedureService } from "../services/procedure.service";
 import { BarberService } from "../services/barber.service";
+import { TimeSlotService } from "../services/time-slot.service";
 
 const procedureService = new ProcedureService(new Servicio());
 const barberService = new BarberService(procedureService);
-
+const timeSlotService = new TimeSlotService();
 // --- HANDLERS DE CADA ESTADO ---
 
 export const StateHandlers: Record<
@@ -15,6 +16,7 @@ export const StateHandlers: Record<
   [BotState.INICIO]: handleInicio,
   [BotState.SELECT_BARBER]: handlerSelectBarber,
   [BotState.SELECT_PROCEDURE]: handlerSelectProcedure,
+  [BotState.SELECT_TIME_SLOT]: handlerSelectProcedure,
   [BotState.AGENDANDO_SELECCIONANDO_SERVICIO]:
     handleAgendandoSeleccionandoServicio,
   [BotState.AGENDANDO_SELECCIONANDO_HORARIO]:
@@ -155,6 +157,29 @@ async function handlerSelectProcedure(
   text += `Descripción: ${selectedProcedure.descripcion}\n`;
   text += `Precio: ${selectedProcedure.precio}\n`;
   text += `duracion: ${selectedProcedure.duracion}\n`;
+
+  const timeSlots = (
+    await timeSlotService.getProcedureTimeslots(selectedProcedure.id)
+  ).map((t, idx) => ({ ...t, idx: idx + 1 }));
+
+  if (!timeSlots || !timeSlots.length)
+    return "No hay horarios disponibles para este servicio\n";
+
+  session.datosTemporales.timeSlotsList = [...timeSlots];
+
+  text += "Estos son los horarios disponibles:\n";
+
+  timeSlots.forEach((b) => {
+    text += `*${b.idx}.*\n`;
+    text += `fecha: - ${b.fecha}\n`;
+    text += `hora inicio: ${b.horaInicio}\n`;
+    text += `hora fin: ${b.horaFin}\n`;
+    text += `\n`;
+  });
+
+  text += "Selecciona el horario deseado\n";
+
+  session.estadoActual = BotState.SELECT_TIME_SLOT;
 
   return text;
 }

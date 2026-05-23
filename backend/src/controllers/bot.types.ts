@@ -2,6 +2,7 @@ export enum BotState {
   INICIO = "INICIO",
   SELECT_BARBER = "SELECT_BARBER",
   SELECT_PROCEDURE = "SELECT_PROCEDURE",
+  SELECT_TIME_SLOT = "SELECT_TIME_SLOT",
   AGENDANDO_SELECCIONANDO_SERVICIO = "AGENDANDO_SELECCIONANDO_SERVICIO",
   AGENDANDO_SELECCIONANDO_HORARIO = "AGENDANDO_SELECCIONANDO_HORARIO",
   AGENDANDO_INGRESANDO_NOMBRE = "AGENDANDO_INGRESANDO_NOMBRE",
@@ -30,6 +31,7 @@ export interface UserSession {
     };
     proceduresList?: any[];
     procedure?: any;
+    timeSlotsList?: any[];
   };
 }
 
@@ -52,4 +54,9 @@ export interface WebhookChange {
 
 export interface WebhookEntry {
   changes?: WebhookChange[];
+}
+
+export enum timeSlotStatus {
+  available = "disponible",
+  busy = "ocupado",
 }
