@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { NavItem } from '../molecules/NavItem'
 import { Avatar } from '../atoms/Avatar'
 import { IconButton } from '../atoms/IconButton'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
 
 const NAV_ITEMS = [
   { to: '/panel/dashboard', icon: 'grid_view',      label: 'Dashboard'  },

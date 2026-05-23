@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { NavItem } from '../molecules/NavItem'
 import { Avatar } from '../atoms/Avatar'
 import { IconButton } from '../atoms/IconButton'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard',     icon: 'admin_panel_settings', label: 'Dashboard'     },
