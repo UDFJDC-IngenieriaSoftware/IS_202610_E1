@@ -5,7 +5,7 @@
  */
 import { Outlet, Navigate } from 'react-router-dom'
 import '../../styles/public.css'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
 
 export function AuthLayout() {
   const { perfil, rol, loading } = useAuth()

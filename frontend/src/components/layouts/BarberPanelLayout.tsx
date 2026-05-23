@@ -5,7 +5,7 @@
  */
 import { Outlet, Navigate } from 'react-router-dom'
 import '../../styles/panel.css'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
 import { BarberSidebar } from '../organisms/BarberSidebar'
 
 export function BarberPanelLayout() {

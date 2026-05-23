@@ -1,6 +1,8 @@
 /**
  * Átomo Toggle — interruptor accesible (checkbox oculto + track visual).
  */
+import { useId } from 'react'
+
 interface ToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
@@ -10,7 +12,8 @@ interface ToggleProps {
 }
 
 export function Toggle({ checked, onChange, label, id, disabled }: ToggleProps) {
-  const inputId = id ?? `toggle-${Math.random().toString(36).slice(2, 7)}`
+  const generatedId = useId()
+  const inputId = id ?? generatedId
   return (
     <label className="toggle" htmlFor={inputId}>
       <input
