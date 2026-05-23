@@ -4,7 +4,8 @@
 import type { ReactNode } from 'react'
 
 interface CardProps {
-  title?: string
+  /** Título de la tarjeta. Acepta string o nodo ReactNode (ej. filtros). */
+  title?: string | ReactNode
   action?: ReactNode
   children: ReactNode
   className?: string
