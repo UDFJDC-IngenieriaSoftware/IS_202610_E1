@@ -84,3 +84,14 @@ export function initials(nombre: string): string {
 export function truncate(text: string, maxLen: number): string {
   return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text
 }
+
+/**
+ * Formatea un número como "$826k" o "$9.91M" (útil para métricas admin).
+ * @example fmtK(826000)   → "$826k"
+ * @example fmtK(9912000)  → "$9.91M"
+ */
+export function fmtK(value: number): string {
+  if (value >= 1_000_000) return '$' + (value / 1_000_000).toFixed(2) + 'M'
+  if (value >= 1_000)     return '$' + Math.round(value / 1_000) + 'k'
+  return fmtCOP(value)
+}
