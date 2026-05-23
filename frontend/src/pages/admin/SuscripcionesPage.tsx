@@ -25,7 +25,7 @@ const RenovRow = memo(function RenovRow({
 }: { barbero: Barbero; onOpen: (b: Barbero) => void }) {
   const plan = PLANES_MOCK.find((p) => p.id === barbero.plan)!
   return (
-    <tr className="row--clickable" onClick={() => onOpen(barbero)}>
+    <tr className="row--clickable" onClick={() => onOpen(barbero)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(barbero)}>
       <td>
         <div className="barb-cell">
           <div className="barb-avatar">{initials(barbero.nombre)}</div>
@@ -109,7 +109,7 @@ export function SuscripcionesPage() {
         <div className="grid-2col grid-2col--wide">
           {/* Próximas renovaciones */}
           <Card title="Próximas renovaciones" flush>
-            <table className="table">
+            <table className="table" aria-label="Próximas renovaciones de suscripción">
               <thead>
                 <tr>
                   <th>Barbero</th>

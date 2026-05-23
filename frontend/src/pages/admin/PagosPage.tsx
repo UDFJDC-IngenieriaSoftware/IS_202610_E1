@@ -188,7 +188,7 @@ export function PagosPage() {
             <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando…</p>
           ) : (
             <>
-              <table className="table">
+              <table className="table" aria-label="Historial de pagos PSE">
                 <thead>
                   <tr>
                     <th>Fecha</th>

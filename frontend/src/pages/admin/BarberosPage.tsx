@@ -33,7 +33,7 @@ const BarberoRow = memo(function BarberoRow({
   onOpen:  (b: Barbero) => void
 }) {
   return (
-    <tr className="row--clickable" onClick={() => onOpen(barbero)}>
+    <tr className="row--clickable" onClick={() => onOpen(barbero)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(barbero)}>
       <td>
         <div className="barb-cell">
           <div className="barb-avatar">{initials(barbero.nombre)}</div>
@@ -195,7 +195,7 @@ export function BarberosPage() {
             <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando…</p>
           ) : (
             <>
-              <table className="table">
+              <table className="table" aria-label="Listado de barberos suscritos">
                 <thead>
                   <tr>
                     <th>Barbero</th>
