@@ -6,22 +6,24 @@ export interface HorarioAttributes {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  disponible: boolean;
+  estado: string;
+  idServicio: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface HorarioCreationAttributes extends Optional<HorarioAttributes, "id" | "disponible"> {}
+export interface HorarioCreationAttributes extends Optional<HorarioAttributes, "id" | "estado"> {}
 
 class Horario extends Model<HorarioAttributes, HorarioCreationAttributes> implements HorarioAttributes {
-  public id!: string;
-  public fecha!: string;
-  public horaInicio!: string;
-  public horaFin!: string;
-  public disponible!: boolean;
+  declare public id: string;
+  declare public fecha: string;
+  declare public horaInicio: string;
+  declare public horaFin: string;
+  declare public estado: string;
+  declare public idServicio: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 Horario.init(
@@ -46,10 +48,15 @@ Horario.init(
       allowNull: false,
       field: "hora_fin",
     },
-    disponible: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
+    estado: {
+      type: DataTypes.STRING,
+      defaultValue: "disponible",
       allowNull: false,
+    },
+    idServicio: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      field: "id_servicio",
     },
   },
   {

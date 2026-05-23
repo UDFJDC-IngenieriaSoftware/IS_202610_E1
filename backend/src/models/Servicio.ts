@@ -4,22 +4,27 @@ import sequelize from "../config/database";
 export interface ServicioAttributes {
   id: string;
   nombre: string;
-  precio: number;
   duracion: number;
+  descripcion?: string;
+  precio: number;
+  idBarbero: string;
   createdAt?: Date;
   updatedAt?: Date;
+  barbero?: any;
 }
 
-export interface ServicioCreationAttributes extends Optional<ServicioAttributes, "id"> {}
+export interface ServicioCreationAttributes extends Optional<ServicioAttributes, "id" | "descripcion"> {}
 
 class Servicio extends Model<ServicioAttributes, ServicioCreationAttributes> implements ServicioAttributes {
-  public id!: string;
-  public nombre!: string;
-  public precio!: number;
-  public duracion!: number;
+  declare public id: string;
+  declare public nombre: string;
+  declare public duracion: number;
+  declare public descripcion: string;
+  declare public precio: number;
+  declare public idBarbero: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 Servicio.init(
@@ -34,6 +39,14 @@ Servicio.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    duracion: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    descripcion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     precio: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -42,9 +55,10 @@ Servicio.init(
         return rawValue ? parseFloat(rawValue as unknown as string) : 0;
       }
     },
-    duracion: {
-      type: DataTypes.INTEGER,
+    idBarbero: {
+      type: DataTypes.UUID,
       allowNull: false,
+      field: "id_barbero",
     },
   },
   {

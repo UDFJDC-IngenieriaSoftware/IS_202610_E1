@@ -11,15 +11,19 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
       },
-      nombre: {
+      nombres: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      telefono: {
+      apellidos: {
         type: Sequelize.STRING,
         allowNull: false,
       },
       email: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      celular: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -33,7 +37,50 @@ module.exports = {
       },
     });
 
-    // 2. Crear Tabla Servicios
+    // 2. Crear Tabla Barberos
+    await queryInterface.createTable('barberos', {
+      id: {
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+      },
+      nombres: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      apellidos: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      celular: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      activo: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+        allowNull: false,
+      },
+      direccion: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      created_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
+    });
+
+    // 3. Crear Tabla Servicios
     await queryInterface.createTable('servicios', {
       id: {
         type: Sequelize.UUID,
@@ -45,13 +92,27 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      duracion: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      descripcion: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       precio: {
         type: Sequelize.DECIMAL(10, 2),
         allowNull: false,
       },
-      duracion: {
-        type: Sequelize.INTEGER,
+      id_barbero: {
+        type: Sequelize.UUID,
         allowNull: false,
+        references: {
+          model: 'barberos',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
       },
       created_at: {
         type: Sequelize.DATE,
@@ -63,7 +124,7 @@ module.exports = {
       },
     });
 
-    // 3. Crear Tabla Horarios
+    // 4. Crear Tabla Horarios
     await queryInterface.createTable('horarios', {
       id: {
         type: Sequelize.UUID,
@@ -83,53 +144,12 @@ module.exports = {
         type: Sequelize.TIME,
         allowNull: false,
       },
-      disponible: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: true,
-        allowNull: false,
-      },
-      created_at: {
-        type: Sequelize.DATE,
-        allowNull: false,
-      },
-      updated_at: {
-        type: Sequelize.DATE,
-        allowNull: false,
-      },
-    });
-
-    // 4. Crear Tabla Citas
-    await queryInterface.createTable('citas', {
-      id: {
-        type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
-        primaryKey: true,
-        allowNull: false,
-      },
-      fecha: {
-        type: Sequelize.DATEONLY,
-        allowNull: false,
-      },
-      hora: {
-        type: Sequelize.TIME,
-        allowNull: false,
-      },
       estado: {
         type: Sequelize.STRING,
         allowNull: false,
-        defaultValue: 'pendiente',
+        defaultValue: 'disponible',
       },
-      cliente_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'clientes',
-          key: 'id',
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
-      },
-      servicio_id: {
+      id_servicio: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -139,11 +159,48 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      horario_id: {
+      created_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
+    });
+
+    // 5. Crear Tabla Citas
+    await queryInterface.createTable('citas', {
+      id: {
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+      },
+      estado: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'pendiente',
+      },
+      precio: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+      },
+      id_horario: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'horarios',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
+      id_cliente: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'clientes',
           key: 'id',
         },
         onUpdate: 'CASCADE',
@@ -159,7 +216,7 @@ module.exports = {
       },
     });
 
-    // 5. Crear Tabla Pagos
+    // 6. Crear Tabla Pagos
     await queryInterface.createTable('pagos', {
       id: {
         type: Sequelize.UUID,
@@ -180,7 +237,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      cita_id: {
+      id_cita: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -200,7 +257,7 @@ module.exports = {
       },
     });
 
-    // 6. Crear Tabla Notificaciones
+    // 7. Crear Tabla Notificaciones
     await queryInterface.createTable('notificaciones', {
       id: {
         type: Sequelize.UUID,
@@ -244,6 +301,7 @@ module.exports = {
     await queryInterface.dropTable('citas');
     await queryInterface.dropTable('horarios');
     await queryInterface.dropTable('servicios');
+    await queryInterface.dropTable('barberos');
     await queryInterface.dropTable('clientes');
   }
 };

@@ -5,7 +5,7 @@ export interface NotificacionAttributes {
   id: string;
   mensaje: string;
   tipo: string;
-  citaId: string;
+  idCita: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -13,13 +13,13 @@ export interface NotificacionAttributes {
 export interface NotificacionCreationAttributes extends Optional<NotificacionAttributes, "id"> {}
 
 class Notificacion extends Model<NotificacionAttributes, NotificacionCreationAttributes> implements NotificacionAttributes {
-  public id!: string;
-  public mensaje!: string;
-  public tipo!: string;
-  public citaId!: string;
+  declare public id: string;
+  declare public mensaje: string;
+  declare public tipo: string;
+  declare public idCita: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 Notificacion.init(
@@ -38,7 +38,7 @@ Notificacion.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    citaId: {
+    idCita: {
       type: DataTypes.UUID,
       allowNull: false,
       field: "cita_id",

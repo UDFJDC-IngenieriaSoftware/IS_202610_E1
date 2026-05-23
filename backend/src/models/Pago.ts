@@ -6,7 +6,7 @@ export interface PagoAttributes {
   monto: number;
   estado: string;
   referencia: string | null;
-  citaId: string;
+  idCita: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -14,14 +14,14 @@ export interface PagoAttributes {
 export interface PagoCreationAttributes extends Optional<PagoAttributes, "id" | "estado" | "referencia"> {}
 
 class Pago extends Model<PagoAttributes, PagoCreationAttributes> implements PagoAttributes {
-  public id!: string;
-  public monto!: number;
-  public estado!: string;
-  public referencia!: string | null;
-  public citaId!: string;
+  declare public id: string;
+  declare public monto: number;
+  declare public estado: string;
+  declare public referencia: string | null;
+  declare public idCita: string;
 
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare public readonly createdAt: Date;
+  declare public readonly updatedAt: Date;
 }
 
 Pago.init(
@@ -49,10 +49,10 @@ Pago.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    citaId: {
+    idCita: {
       type: DataTypes.UUID,
       allowNull: false,
-      field: "cita_id",
+      field: "id_cita",
     },
   },
   {

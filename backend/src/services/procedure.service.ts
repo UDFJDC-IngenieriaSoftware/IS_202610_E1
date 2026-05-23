@@ -35,23 +35,31 @@ export class ProcedureService {
   }
 
   async getServicesMenuText(): Promise<string> {
-    const procedures = await Servicio.findAll({ raw: true });
+    const procedures = await Servicio.findAll({
+      include: ["barbero"],
+    });
 
     let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
     mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
 
     procedures.forEach((serv) => {
-      console.log(serv);
+      const servJson = serv.toJSON() as ServicioAttributes;
+      const barberName = servJson.barbero
+        ? `${servJson.barbero.nombres} ${servJson.barbero.apellidos}`
+        : "Barbero";
 
       const precioFormateado = new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
         minimumFractionDigits: 0,
-      }).format(serv.precio);
+      }).format(servJson.precio);
 
-      mensaje += `🔹 *${serv.nombre}*\n`;
+      mensaje += `🔹 *${servJson.nombre}* (por ${barberName})\n`;
+      if (servJson.descripcion) {
+        mensaje += `   📝 _${servJson.descripcion}_\n`;
+      }
       mensaje += `   💵 Precio: ${precioFormateado}\n`;
-      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
+      mensaje += `   ⏱️ Duración: ${servJson.duracion} minutos\n\n`;
     });
 
     mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;

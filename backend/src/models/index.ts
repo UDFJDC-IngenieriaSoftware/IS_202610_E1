@@ -1,5 +1,6 @@
 import sequelize from "../config/database";
 import Cliente from "./Cliente";
+import Barbero from "./Barbero";
 import Servicio from "./Servicio";
 import Horario from "./Horario";
 import Cita from "./Cita";
@@ -8,29 +9,34 @@ import Notificacion from "./Notificacion";
 
 // ─── DEFINICIÓN DE RELACIONES Y ASOCIACIONES ─────────────────────────────
 
-// 1. Cliente <-> Cita (Relación 1:N)
-Cliente.hasMany(Cita, { foreignKey: "clienteId", as: "citas" });
-Cita.belongsTo(Cliente, { foreignKey: "clienteId", as: "cliente" });
+// 1. Barbero <-> Servicio (Relación 1:N)
+Barbero.hasMany(Servicio, { foreignKey: "idBarbero", as: "servicios" });
+Servicio.belongsTo(Barbero, { foreignKey: "idBarbero", as: "barbero" });
 
-// 2. Servicio <-> Cita (Relación 1:N)
-Servicio.hasMany(Cita, { foreignKey: "servicioId", as: "citas" });
-Cita.belongsTo(Servicio, { foreignKey: "servicioId", as: "servicio" });
+// 2. Servicio <-> Horario (Relación 1:N)
+Servicio.hasMany(Horario, { foreignKey: "idServicio", as: "horarios" });
+Horario.belongsTo(Servicio, { foreignKey: "idServicio", as: "servicio" });
 
-// 3. Horario <-> Cita (Relación 1:N)
-Horario.hasMany(Cita, { foreignKey: "horarioId", as: "citas" });
-Cita.belongsTo(Horario, { foreignKey: "horarioId", as: "horario" });
+// 3. Horario <-> Cita (Relación 1:1 - Un horario solo puede pertenecer a una cita)
+Horario.hasOne(Cita, { foreignKey: "idHorario", as: "cita" });
+Cita.belongsTo(Horario, { foreignKey: "idHorario", as: "horario" });
 
-// 4. Cita <-> Pago (Relación 1:1 o 1:N - mapeado con FK cita_id en tabla Pago)
-Cita.hasOne(Pago, { foreignKey: "citaId", as: "pago" });
-Pago.belongsTo(Cita, { foreignKey: "citaId", as: "cita" });
+// 4. Cliente <-> Cita (Relación 1:N)
+Cliente.hasMany(Cita, { foreignKey: "idCliente", as: "citas" });
+Cita.belongsTo(Cliente, { foreignKey: "idCliente", as: "cliente" });
 
-// 5. Cita <-> Notificacion (Relación 1:N)
-Cita.hasMany(Notificacion, { foreignKey: "citaId", as: "notificaciones" });
-Notificacion.belongsTo(Cita, { foreignKey: "citaId", as: "cita" });
+// 5. Cita <-> Pago (Relación 1:N)
+Cita.hasMany(Pago, { foreignKey: "idCita", as: "pagos" });
+Pago.belongsTo(Cita, { foreignKey: "idCita", as: "cita" });
+
+// 6. Cita <-> Notificacion (Relación 1:N)
+Cita.hasMany(Notificacion, { foreignKey: "idCita", as: "notificaciones" });
+Notificacion.belongsTo(Cita, { foreignKey: "idCita", as: "cita" });
 
 export {
   sequelize,
   Cliente,
+  Barbero,
   Servicio,
   Horario,
   Cita,
