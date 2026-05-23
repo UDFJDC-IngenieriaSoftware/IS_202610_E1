@@ -1,0 +1,26 @@
+services:
+  # ─── BACKEND SERVICE (Node.js - Prod Override) ──────────────────────────
+  backend:
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # En producción, Puppeteer también usa el Chromium instalado en el contenedor
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+  # ─── DATABASE SERVICE (PostgreSQL - Prod Override) ──────────────────────
+  database:
+    restart: always
+    # IMPORTANTE: No mapeamos el puerto 5432:5432 hacia el host exterior para mayor seguridad.
+    # Los contenedores se comunican internamente de forma privada y segura.
+    environment:
+      - POSTGRES_DB=bot_db_prod
+      - POSTGRES_USER=postgres_prod
+      - POSTGRES_PASSWORD=password_seguro_produccion_cambiame  # Reemplazar con contraseña robusta
+
+  # ─── NGINX SERVICE (Reverse Proxy - Prod Override) ──────────────────────
+  nginx:
+    restart: always
