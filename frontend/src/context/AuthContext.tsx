@@ -1,38 +1,19 @@
 /**
  * AuthContext — estado global de autenticación.
  * Persiste el token en localStorage y expone el perfil + rol activo.
+ *
+ * Solo exporta el componente AuthProvider para cumplir
+ * react-refresh/only-export-components.
+ * El hook useAuth y el objeto AuthContext viven en src/hooks/useAuth.ts.
  */
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react'
-import type { BarberoPerfil } from '../types'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { AuthContext, type AuthState, type Rol } from '../hooks/useAuth'
 import { login as loginService, logout as logoutService, getMe } from '../services/auth.service'
-import type { LoginPayload } from '../services/auth.service'
-
-type Rol = 'barbero' | 'admin'
-
-interface AuthState {
-  perfil: BarberoPerfil | null
-  rol: Rol | null
-  loading: boolean
-}
-
-interface AuthContextValue extends AuthState {
-  login: (payload: LoginPayload) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
-    perfil: null,
-    rol: null,
+    perfil:  null,
+    rol:     null,
     loading: true,
   })
 
@@ -46,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => setState({ perfil: null, rol: null, loading: false }))
   }, [])
 
-  const login = useCallback(async (payload: LoginPayload) => {
+  const login = useCallback(async (payload: Parameters<typeof loginService>[0]) => {
     const { token, perfil, rol } = await loginService(payload)
     localStorage.setItem('miturno_token', token)
     localStorage.setItem('miturno_rol', rol)
@@ -65,10 +46,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth debe usarse dentro de <AuthProvider>')
-  return ctx
 }
