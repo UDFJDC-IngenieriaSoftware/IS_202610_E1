@@ -448,7 +448,7 @@ export function RegisterPage() {
 
                 <p className="auth-foot">
                   Al crear la cuenta aceptas nuestros{' '}
-                  <a href="#">Términos</a> y <a href="#">Política de privacidad</a>.
+                  <a href="/terminos">Términos</a> y <a href="/privacidad">Política de privacidad</a>.
                 </p>
               </form>
             </section>

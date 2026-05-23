@@ -107,14 +107,13 @@ export function Modal({ title, onClose, maxW = 560, children }: ModalProps) {
     return () => document.removeEventListener('keydown', onTab)
   }, [])
 
+  // El backdrop captura clicks de mouse para cerrar (conveniencia).
+  // Teclado: Escape (useEffect arriba). AT: aria-modal="true" aísla el dialog.
+  /* eslint-disable
+     jsx-a11y/click-events-have-key-events,
+     jsx-a11y/no-static-element-interactions,
+     jsx-a11y/no-noninteractive-element-interactions */
   return (
-    {/*
-      El backdrop captura clicks del mouse para cerrar (conveniencia de UX).
-      Usuarios de teclado usan Escape (manejado en useEffect).
-      El foco permanece en el dialog gracias al focus-trap.
-      La aislación AT se garantiza con aria-modal="true" en el dialog interno.
-    */}
-    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
     <div
       className={`modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`}
       onClick={handleClose}
