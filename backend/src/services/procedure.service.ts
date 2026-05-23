@@ -59,13 +59,10 @@ export class ProcedureService {
     return mensaje.trim();
   }
 
-  async selectProcedure(idProcedure: string): Promise<ServicioAttributes> {
-    return {
-      id: "1",
-      nombre: "Lavado e Hidratación Capilar",
-      precio: 12000,
-      duracion: 15,
-    };
+  async selectProcedure(
+    idProcedure: string,
+  ): Promise<ServicioAttributes | null> {
+    return await Servicio.findByPk(idProcedure);
   }
 
   async checkAvailability(idProcedure: string): Promise<boolean> {
