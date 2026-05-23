@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * App.tsx — árbol de rutas de MiTurno.
  *

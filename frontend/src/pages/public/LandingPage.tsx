@@ -302,7 +302,7 @@ export function LandingPage() {
           </div>
           <div className="pf-col"><h4>Producto</h4><ul><li><a href="#como-funciona">Cómo funciona</a></li><li><a href="#planes">Planes</a></li><li><Link to="/panel/dashboard">Demo</Link></li></ul></div>
           <div className="pf-col"><h4>Cuenta</h4><ul><li><Link to="/login">Iniciar sesión</Link></li><li><Link to="/registro">Crear cuenta</Link></li></ul></div>
-          <div className="pf-col"><h4>Soporte</h4><ul><li><a href="#">Centro de ayuda</a></li><li><a href="#">Política de privacidad</a></li><li><a href="#">Términos</a></li></ul></div>
+          <div className="pf-col"><h4>Soporte</h4><ul><li><a href="/ayuda">Centro de ayuda</a></li><li><a href="/privacidad">Política de privacidad</a></li><li><a href="/terminos">Términos</a></li></ul></div>
         </div>
         <div className="pub-footer-bottom">
           <div>© 2026 MiTurno · Hecho en Medellín 🇨🇴</div>

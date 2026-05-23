@@ -121,6 +121,11 @@
   flex: 1; min-width: 0; padding: 2px 0;
   color: var(--ink);
 }
+/* Indicador de foco visible para el campo de búsqueda (accesibilidad de teclado) */
+.search:focus-within {
+  outline: 2px solid var(--accent, oklch(0.65 0.18 55));
+  outline-offset: 1px;
+}
 .search input::placeholder { color: var(--muted-2); }
 .search kbd {
   font: 11px var(--mono);
@@ -880,7 +885,18 @@
   outline: 0;
   transition: border-color .12s;
 }
+/* :focus para mouse / touch — solo cambia el borde */
 .field input:focus, .field select:focus { border-color: var(--ink); }
+/* :focus-visible para teclado — añade outline de alto contraste */
+.field input:focus-visible, .field select:focus-visible {
+  border-color: var(--ink);
+  outline: 2px solid var(--accent, oklch(0.65 0.18 55));
+  outline-offset: 1px;
+}
+/* Estado inválido — borde rojo cuando aria-invalid="true" */
+.field input[aria-invalid="true"], .field select[aria-invalid="true"] {
+  border-color: oklch(0.55 0.2 25);
+}
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .anticipo-hint {
   display: flex; align-items: center; gap: 8px;

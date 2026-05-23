@@ -49,6 +49,9 @@ export function Modal({ title, onClose, maxW = 560, children }: ModalProps) {
     prevFocus.current = document.activeElement as HTMLElement
     document.body.style.overflow = 'hidden'
 
+    // Nota: inert en #root requeriría Portal fuera del root — se omite aquí.
+    // La aislación AT se logra con aria-modal="true" en el dialog.
+
     // Dar un tick para que el DOM esté listo antes de enfocar
     const timer = setTimeout(() => {
       const first = getFocusable(dialogRef.current!)[0]
@@ -105,6 +108,13 @@ export function Modal({ title, onClose, maxW = 560, children }: ModalProps) {
   }, [])
 
   return (
+    {/*
+      El backdrop captura clicks del mouse para cerrar (conveniencia de UX).
+      Usuarios de teclado usan Escape (manejado en useEffect).
+      El foco permanece en el dialog gracias al focus-trap.
+      La aislación AT se garantiza con aria-modal="true" en el dialog interno.
+    */}
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
     <div
       className={`modal-backdrop${closing ? ' modal-backdrop--closing' : ''}`}
       onClick={handleClose}

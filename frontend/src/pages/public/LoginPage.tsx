@@ -110,9 +110,10 @@ export function LoginPage() {
 
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
             {errorMsg && (
-              <div className="alert" role="alert" aria-live="assertive">
+              <div id="login-error" className="alert" role="alert" aria-live="assertive">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+                  aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="9" />
                   <path d="M12 8v4M12 16h.01" />
                 </svg>
@@ -126,9 +127,11 @@ export function LoginPage() {
                 type="email"
                 placeholder="andres@estudiobarberia.co"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setErrorMsg(null) }}
                 autoComplete="email"
                 required
+                aria-invalid={errorMsg ? 'true' : undefined}
+                aria-describedby={errorMsg ? 'login-error' : undefined}
               />
             </label>
 
@@ -138,9 +141,11 @@ export function LoginPage() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrorMsg(null) }}
                 autoComplete="current-password"
                 required
+                aria-invalid={errorMsg ? 'true' : undefined}
+                aria-describedby={errorMsg ? 'login-error' : undefined}
               />
             </label>
 

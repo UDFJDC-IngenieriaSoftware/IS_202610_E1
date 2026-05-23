@@ -126,22 +126,24 @@ const MoraBarberoRow = memo(function MoraBarberoRow({
 }) {
   const meta = ESTADO_SUS_META['morosa']
   return (
-    <li className="cita-row" onClick={() => onOpen(barbero)} role="button" tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onOpen(barbero)}>
-      <div className="cita-time">
-        <div className="cita-hora" style={{ color: meta.fg }}>
-          {barbero.proxCobro.slice(8)}d
+    <li>
+      <button type="button" className="cita-row" onClick={() => onOpen(barbero)}
+        aria-label={`Ver detalle de ${barbero.nombre}`}>
+        <div className="cita-time">
+          <div className="cita-hora" style={{ color: meta.fg }}>
+            {barbero.proxCobro.slice(8)}d
+          </div>
+          <div className="cita-dur">mora</div>
         </div>
-        <div className="cita-dur">mora</div>
-      </div>
-      <div className="cita-bar" style={{ background: meta.fg }} aria-hidden="true" />
-      <div className="cita-info">
-        <div className="cita-cliente">{barbero.nombre}</div>
-        <div className="cita-servicio">
-          {barbero.barberia} · Plan {planNombre(barbero.plan)} · {fmtCOP(barbero.mrr)}
+        <div className="cita-bar" style={{ background: meta.fg }} aria-hidden="true" />
+        <div className="cita-info">
+          <div className="cita-cliente">{barbero.nombre}</div>
+          <div className="cita-servicio">
+            {barbero.barberia} · Plan {planNombre(barbero.plan)} · {fmtCOP(barbero.mrr)}
+          </div>
         </div>
-      </div>
-      <button className="btn ghost-sm" type="button">Reintentar PSE</button>
+        <span className="btn ghost-sm">Reintentar PSE</span>
+      </button>
     </li>
   )
 })
