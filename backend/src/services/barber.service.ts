@@ -9,7 +9,7 @@ export class BarberService {
       where: { activo: true },
       raw: true,
     });
-    return barbers
+    return barbers;
     // return this.toText(
     //   barbers
     //     .map((b, index) => ({ id: index, nombre: b.nombres }))
@@ -29,13 +29,15 @@ export class BarberService {
       throw new Error("Barber has not any procedure to offer");
     }
 
-    return this.toText(
-      procedures
-        .map((p) => ({ name: p.nombre, price: p.precio }))
-        .map(
-          (p) => `${p.name} - ${p.price}  
-        `,
-        ),
-    );
+    return procedures;
+
+    // return this.toText(
+    //   procedures
+    //     .map((p) => ({ name: p.nombre, price: p.precio }))
+    //     .map(
+    //       (p) => `${p.name} - ${p.price}
+    //     `,
+    //     ),
+    // );
   }
 }

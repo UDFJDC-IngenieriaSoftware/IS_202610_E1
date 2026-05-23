@@ -14,6 +14,7 @@ export const StateHandlers: Record<
 > = {
   [BotState.INICIO]: handleInicio,
   [BotState.SELECT_BARBER]: handlerSelectBarber,
+  [BotState.SELECT_PROCEDURE]: handlerSelectProcedure,
   [BotState.AGENDANDO_SELECCIONANDO_SERVICIO]:
     handleAgendandoSeleccionandoServicio,
   [BotState.AGENDANDO_SELECCIONANDO_HORARIO]:
@@ -106,9 +107,55 @@ async function handlerSelectBarber(
     throw new Error("No existe el barbero");
   }
 
+  session.datosTemporales.barber = { ...selectedBarber };
+
+  let barberProcedures = (
+    await barberService.getProcedures(selectedBarber.id)
+  ).map((p, idx) => ({ ...p, idx: idx + 1 }));
+
+  session.datosTemporales.proceduresList = barberProcedures;
+
   let text = "";
 
-  text += `barbero seleccionado ${selectedBarber.nombres} ${selectedBarber.apellidos}`;
+  text += `barbero seleccionado ${selectedBarber.nombres} ${selectedBarber.apellidos} \n`;
+
+  text += "Estos son los servicios que ofrece el barbero \n";
+
+  barberProcedures.forEach((b) => {
+    text += `• ${b.idx} - *${b.nombre}*\n`;
+    text += `descripción: - ${b.descripcion}\n`;
+    text += `Precio: ${b.precio}\n`;
+    text += `\n`;
+  });
+
+  text += "Selecciona el servicio que deseas\n";
+
+  session.estadoActual = BotState.SELECT_PROCEDURE;
+  return text;
+}
+
+async function handlerSelectProcedure(
+  session: UserSession,
+  input: string,
+): Promise<string> {
+  const selectedProcedure = session.datosTemporales.proceduresList?.find(
+    (b) => b.idx === parseInt(input),
+  );
+  if (!selectedProcedure) {
+    throw new Error("No existe el servicio deseado");
+  }
+
+  session.datosTemporales.procedure = { ...selectedProcedure };
+
+  let text = "";
+
+  text += `Servicio seleccionado: *${selectedProcedure.nombre}*\n`;
+
+  text += "Detalles \n";
+  text += `Descripción: ${selectedProcedure.descripcion}\n`;
+  text += `Precio: ${selectedProcedure.precio}\n`;
+  text += `duracion: ${selectedProcedure.duracion}\n`;
+
   return text;
 }
 

@@ -26,10 +26,10 @@ export class ProcedureService {
         duracion: 45,
         idBarbero: "b0e86958-8686-4e38-967a-0e7845ef2001",
       },
-      { 
-        id: "4", 
-        nombre: "Corte Infantil", 
-        precio: 18000, 
+      {
+        id: "4",
+        nombre: "Corte Infantil",
+        precio: 18000,
         duracion: 25,
         idBarbero: "b0e86958-8686-4e38-967a-0e7845ef2002",
       },
@@ -86,9 +86,7 @@ export class ProcedureService {
     return mensaje.trim();
   }
 
-  async selectProcedure(
-    idProcedure: string,
-  ): Promise<any | null> {
+  async selectProcedure(idProcedure: string): Promise<any | null> {
     return await Servicio.findByPk(idProcedure);
   }
 

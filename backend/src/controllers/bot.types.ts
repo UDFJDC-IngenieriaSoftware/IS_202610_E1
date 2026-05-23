@@ -1,6 +1,7 @@
 export enum BotState {
   INICIO = "INICIO",
   SELECT_BARBER = "SELECT_BARBER",
+  SELECT_PROCEDURE = "SELECT_PROCEDURE",
   AGENDANDO_SELECCIONANDO_SERVICIO = "AGENDANDO_SELECCIONANDO_SERVICIO",
   AGENDANDO_SELECCIONANDO_HORARIO = "AGENDANDO_SELECCIONANDO_HORARIO",
   AGENDANDO_INGRESANDO_NOMBRE = "AGENDANDO_INGRESANDO_NOMBRE",
@@ -12,19 +13,23 @@ export interface UserSession {
   telefono: string;
   estadoActual: BotState;
   datosTemporales: {
-    barberId?: string;
     servicioId?: string;
     horarioId?: string;
     nombres?: string;
     apellidos?: string;
     precioCita?: number;
-    barberoNombre?: string;
     servicioNombre?: string;
     fechaHorario?: string;
     horaInicio?: string;
-    listaServiciosMapping?: string[]; // Mapea opciones "1", "2" a UUIDs
-    listaHorariosMapping?: string[]; // Mapea opciones "1", "2" a UUIDs
-    barberListMapping?: any[]; // Mapea opciones "1", "2" a UUIDs
+    listaServiciosMapping?: string[];
+    listaHorariosMapping?: string[];
+    barberListMapping?: any[];
+    barber?: {
+      id?: string;
+      name?: string;
+    };
+    proceduresList?: any[];
+    procedure?: any;
   };
 }
 
