@@ -1,6 +1,6 @@
 /**
  * Organismo BarberoModal — detalle de barbero con historial de pagos (admin).
- * TODO(step-10): integrar focus-trap y transición.
+ * Hereda focus-trap, scroll-lock y animación de entrada/salida del <Modal> base.
  */
 import { useMemo } from 'react'
 import { Modal }       from './Modal'

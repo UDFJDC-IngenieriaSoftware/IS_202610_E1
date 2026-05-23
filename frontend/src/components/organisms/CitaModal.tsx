@@ -1,37 +1,45 @@
 /**
  * Organismo CitaModal — detalle de una cita con acciones.
- * TODO(step-10): extraído como organismo compartido; añadir animación y foco.
+ *
+ * Accesibilidad:
+ *  - Región aria-live="polite" anuncia el resultado de las acciones al lector
+ *  - Botón "Marcar completada" deshabilitado cuando la cita ya está completada
+ *  - Hereda focus-trap y scroll-lock del <Modal> base
  */
-import { useCallback } from 'react'
-import { Modal } from './Modal'
+import { useCallback, useState } from 'react'
+import { Modal }      from './Modal'
 import { StatusPill } from '../atoms/StatusPill'
-import { Icon } from '../atoms/Icon'
+import { Icon }       from '../atoms/Icon'
 import { fmtCOP, fmtFechaLarga, initials } from '../../utils/format'
 import type { Cita } from '../../types'
 
 interface CitaModalProps {
   cita: Cita
   onClose: () => void
-  /** Callback opcional para cambiar estado (se usa en servicio real) */
   onMarcarCompletada?: (id: string) => void
   onCancelar?: (id: string) => void
 }
 
 export function CitaModal({ cita, onClose, onMarcarCompletada, onCancelar }: CitaModalProps) {
-  const anticipo  = cita.precio / 2
-  const restante  = cita.precio - anticipo
-  const pagado    = cita.estado === 'confirmada' || cita.estado === 'completada'
+  const anticipo   = cita.precio / 2
+  const restante   = cita.precio - anticipo
+  const pagado     = cita.estado === 'confirmada' || cita.estado === 'completada'
   const fechaLarga = fmtFechaLarga(cita.fecha)
   const iniciales  = initials(cita.cliente)
 
+  const [feedback, setFeedback] = useState('')
+
   const handleCompletada = useCallback(() => {
     onMarcarCompletada?.(cita.id)
-    onClose()
+    setFeedback('Cita marcada como completada.')
+    // Dar tiempo a que el lector lo anuncie antes de cerrar
+    setTimeout(onClose, 600)
   }, [onMarcarCompletada, cita.id, onClose])
 
   const handleCancelar = useCallback(() => {
     onCancelar?.(cita.id)
-    onClose()
+    setFeedback('Cita cancelada.')
+    setTimeout(onClose, 600)
   }, [onCancelar, cita.id, onClose])
 
   return (
@@ -100,9 +108,19 @@ export function CitaModal({ cita, onClose, onMarcarCompletada, onCancelar }: Cit
         </div>
       </div>
 
+      {/* Feedback aria-live */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {feedback}
+      </div>
+
       {/* Acciones */}
       <div className="modal-foot modal-foot--3">
-        <button className="btn ghost" type="button" onClick={handleCancelar}>
+        <button
+          className="btn ghost"
+          type="button"
+          onClick={handleCancelar}
+          disabled={cita.estado === 'cancelada' || cita.estado === 'completada'}
+        >
           <Icon name="close" size={15} /> Cancelar cita
         </button>
         <button className="btn ghost" type="button">
