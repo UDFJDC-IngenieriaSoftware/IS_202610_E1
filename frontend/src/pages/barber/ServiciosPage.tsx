@@ -185,7 +185,7 @@ export function ServiciosPage() {
 
         {/* Tabla de servicios */}
         <Card title="Catálogo" flush>
-          <table className="table table--servicios">
+          <table className="table table--servicios" aria-label="Servicios del barbero">
             <thead>
               <tr>
                 <th>Servicio</th>

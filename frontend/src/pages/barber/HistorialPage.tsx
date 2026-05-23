@@ -35,7 +35,7 @@ const HistorialRow = memo(function HistorialRow({
   onOpen: (c: Cita) => void
 }) {
   return (
-    <tr className="row--clickable" onClick={() => onOpen(cita)}>
+    <tr className="row--clickable" onClick={() => onOpen(cita)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(cita)}>
       <td>
         <time dateTime={cita.fecha}>{fmtFechaCorta(cita.fecha)}</time>
       </td>
@@ -191,7 +191,7 @@ export function HistorialPage() {
             <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando…</p>
           ) : (
             <>
-              <table className="table table--historial">
+              <table className="table table--historial" aria-label="Historial de citas">
                 <thead>
                   <tr>
                     <th>Fecha</th>
