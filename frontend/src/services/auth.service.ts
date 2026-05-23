@@ -16,7 +16,9 @@ export interface LoginPayload {
 }
 
 export interface AuthResponse {
-  token: string
+  /** Token JWT — presente en mocks; en producción el backend lo envía
+   *  como cookie HttpOnly y puede no aparecer en el cuerpo JSON. */
+  token?: string
   perfil: BarberoPerfil
   rol: 'barbero' | 'admin'
 }

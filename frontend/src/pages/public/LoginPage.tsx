@@ -10,7 +10,8 @@ import { useAuth } from '../../hooks/useAuth'
 function ScissorsIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+      aria-hidden="true" focusable="false">
       <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
       <path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" />
     </svg>
@@ -20,7 +21,8 @@ function ScissorsIcon() {
 function ArrowIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+      aria-hidden="true" focusable="false">
       <path d="M5 12h14M13 5l7 7-7 7" />
     </svg>
   )
@@ -151,7 +153,9 @@ export function LoginPage() {
                 />
                 Recordarme en este dispositivo
               </label>
-              <a className="link" href="#">¿Olvidaste tu contraseña?</a>
+              <button className="link" type="button" onClick={() => {/* TODO: flujo recuperar contraseña */}}>
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
 
             <button
@@ -188,7 +192,9 @@ export function LoginPage() {
 
             <p className="auth-foot">
               Al continuar aceptas nuestros{' '}
-              <a href="#">Términos</a> y <a href="#">Política de privacidad</a>.
+              <button className="link" type="button" onClick={() => {/* TODO: abrir términos */}}>Términos</button>
+              {' '}y{' '}
+              <button className="link" type="button" onClick={() => {/* TODO: abrir política */}}>Política de privacidad</button>.
             </p>
           </form>
         </div>

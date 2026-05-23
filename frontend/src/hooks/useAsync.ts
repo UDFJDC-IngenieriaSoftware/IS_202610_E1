@@ -4,7 +4,12 @@
  * - Estado inicial: loading=true (cubre la primera carga sin setState síncrono en effect).
  * - refetch(): resetea a loading=true desde el event handler (no desde el effect),
  *   luego incrementa version para re-ejecutar el effect.
- * - Cancela la actualización de estado si el componente se desmonta (flag `active`).
+ * - Crea un AbortController por cada ejecución y lo cancela en el cleanup:
+ *   el `fn` recibe el signal y puede pasarlo al fetch/request para cancelar
+ *   la petición de red en lugar de solo ignorar el resultado.
+ *
+ * Firma de `fn`: (signal: AbortSignal) => Promise<T>
+ * Las funciones con menos parámetros `() => ...` también son válidas en TS.
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 
@@ -15,7 +20,7 @@ interface AsyncState<T> {
 }
 
 export function useAsync<T>(
-  fn: () => Promise<T>,
+  fn: (signal: AbortSignal) => Promise<T>,
   deps: unknown[] = [],
 ): AsyncState<T> & { refetch: () => void } {
   const [state, setState] = useState<AsyncState<T>>({
@@ -37,15 +42,17 @@ export function useAsync<T>(
 
   useEffect(() => {
     mountedRef.current = true
-    let active = true
+    const controller = new AbortController()
 
-    fn()
+    fn(controller.signal)
       .then((data) => {
-        if (active && mountedRef.current)
+        if (!controller.signal.aborted && mountedRef.current)
           setState({ data, loading: false, error: null })
       })
       .catch((err: unknown) => {
-        if (active && mountedRef.current)
+        // Ignorar errores de cancelación (componente desmontado o refetch)
+        if (controller.signal.aborted) return
+        if (mountedRef.current)
           setState({
             data:    null,
             loading: false,
@@ -54,7 +61,7 @@ export function useAsync<T>(
       })
 
     return () => {
-      active = false
+      controller.abort()
       mountedRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
