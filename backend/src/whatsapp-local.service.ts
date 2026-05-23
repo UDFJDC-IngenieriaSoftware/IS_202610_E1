@@ -83,6 +83,8 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
     return this.client;
   }
 
+  public async toText() {}
+
   // ─── Enviar mensaje de texto simple ───────────────────────────
   public async sendText(to: string, text: string): Promise<any> {
     const c = await this.initClient();
@@ -100,10 +102,7 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
 🤖 *Asistente Virtual*
 ¿En qué puedo ayudarte hoy?
 
-1️⃣ 🕐 Horarios
-2️⃣ 💰 Precios
-3️⃣ 📍 Ubicación
-4️⃣ 📞 Contacto
+1️⃣ 🕐 Lista de Barberos
     `.trim();
 
     return this.sendText(to, menuText);

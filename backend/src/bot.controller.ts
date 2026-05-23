@@ -1,7 +1,10 @@
 import whatsappService from "./whatsapp.factory";
 import { ProcedureService } from "./services/procedure.service";
+import { BarberService } from "./services/barber.service";
+import { Servicio } from "./models";
 
-const procedureService = new ProcedureService();
+const procedureService = new ProcedureService(new Servicio());
+const barberService = new BarberService(new ProcedureService(new Servicio()));
 
 export interface WebhookMessage {
   from: string;
@@ -49,25 +52,33 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
       return whatsappService.sendMenu(from);
     }
 
-    if (texto === "2" || texto.includes("precio") || texto.includes("servicio")) {
-      const mensaje = await procedureService.getServicesMenuText();
-      return whatsappService.sendText(from, mensaje);
+    if (texto === "1") {
+      const text = await barberService.getAllBarbers();
+      console.log({ text });
+
+      return whatsappService.sendText(from, text);
     }
 
-    // En dev — maneja opciones numéricas del menú de texto
-    const opcionesTexto: Record<string, string> = {
-      "1": FAQ.faq_horario,
-      "3": FAQ.faq_ubicacion,
-      "4": FAQ.faq_contacto,
-    };
-
-    if (opcionesTexto[texto]) {
-      await whatsappService.sendText(from, opcionesTexto[texto]);
-      await whatsappService.sendText(from, "¿Necesitas algo más? Escribe *menú* para volver.");
-      return;
+    if (texto === "2") {
+      const text = await barberService.getProcedures(
+        "b0e86958-8686-4e38-967a-0e7845ef2001",
+      );
+      console.log({ text });
+      return whatsappService.sendText(from, text);
     }
 
-    await whatsappService.sendText(from, "👋 Escribe *hola* para ver el menú de opciones.");
+    if (texto === "3") {
+      const text = await procedureService.getDescription(
+        "a0e86958-8686-4e38-967a-0e7845ef2001",
+      );
+      console.log({ text });
+      return whatsappService.sendText(from, text);
+    }
+
+    await whatsappService.sendText(
+      from,
+      "👋 Escribe *hola* para ver el menú de opciones.",
+    );
     return;
   }
 
@@ -79,7 +90,10 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
 
       if (respuesta) {
         await whatsappService.sendText(from, respuesta);
-        await whatsappService.sendText(from, "¿Necesitas algo más? Escribe *menú* para volver.");
+        await whatsappService.sendText(
+          from,
+          "¿Necesitas algo más? Escribe *menú* para volver.",
+        );
         return;
       }
     }

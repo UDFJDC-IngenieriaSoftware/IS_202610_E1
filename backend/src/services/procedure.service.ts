@@ -34,6 +34,15 @@ export class ProcedureService {
     return mockServicios;
   }
 
+  async getBarberProcedures(idBarber) {
+    return Servicio.findAll({
+      where: {
+        idBarbero: idBarber,
+      },
+      raw: true,
+    });
+  }
+
   async getServicesMenuText(): Promise<string> {
     const procedures = await Servicio.findAll({
       include: ["barbero"],
@@ -75,5 +84,16 @@ export class ProcedureService {
 
   async checkAvailability(idProcedure: string): Promise<boolean> {
     return true;
+  }
+
+  async getDescription(idProcedure): Promise<any> {
+    const description = await Servicio.findByPk(idProcedure, { raw: true });
+    const { nombre, duracion, descripcion, precio } = description;
+    const text = `${nombre}
+    descripción: ${descripcion}
+    precio: ${precio}
+    duración: ${duracion}
+    `;
+    return text;
   }
 }
