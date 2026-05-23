@@ -4,7 +4,7 @@ dotenv.config({ path: `.env.${env}` });
 dotenv.config(); // fallback a .env si falta alguna var
 
 import express, { Request, Response } from "express";
-import { handleMessage, WebhookEntry } from "./src/bot.controller";
+import { handleMessage, WebhookEntry } from "./src/controllers/bot.controller";
 import { sequelize } from "./src/models";
 import whatsappService from "./src/whatsapp.factory";
 

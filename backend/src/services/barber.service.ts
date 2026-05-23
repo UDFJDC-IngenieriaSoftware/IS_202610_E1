@@ -5,12 +5,16 @@ export class BarberService {
   constructor(private procedureService: ProcedureService) {}
 
   async getAllBarbers(): Promise<any> {
-    const barbers = await BarberModel.findAll({ raw: true });
-    return this.toText(
-      barbers
-        .map((b, index) => ({ id: index, nombre: b.nombres }))
-        .map((b) => `${b.id} - ${b.nombre}`),
-    );
+    const barbers = await BarberModel.findAll({
+      where: { activo: true },
+      raw: true,
+    });
+    return barbers
+    // return this.toText(
+    //   barbers
+    //     .map((b, index) => ({ id: index, nombre: b.nombres }))
+    //     .map((b) => `${b.id} - ${b.nombre}`),
+    // );
   }
 
   async toText(arrayParam): Promise<any> {
