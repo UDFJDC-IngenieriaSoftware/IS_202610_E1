@@ -1,6 +1,10 @@
 /**
  * useAsync — patrón loading / data / error reutilizable.
- * Cancela la actualización de estado si el componente se desmonta.
+ *
+ * - Estado inicial: loading=true (cubre la primera carga sin setState síncrono en effect).
+ * - refetch(): resetea a loading=true desde el event handler (no desde el effect),
+ *   luego incrementa version para re-ejecutar el effect.
+ * - Cancela la actualización de estado si el componente se desmonta (flag `active`).
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 
@@ -15,37 +19,46 @@ export function useAsync<T>(
   deps: unknown[] = [],
 ): AsyncState<T> & { refetch: () => void } {
   const [state, setState] = useState<AsyncState<T>>({
-    data: null,
+    data:    null,
     loading: true,
-    error: null,
+    error:   null,
   })
   const mountedRef = useRef(true)
-  const [tick, setTick] = useState(0)
+  const [version, setVersion] = useState(0)
 
-  const refetch = useCallback(() => setTick((t) => t + 1), [])
+  /**
+   * refetch() se llama desde manejadores de evento (no desde un effect),
+   * por lo que setState aquí no viola react-hooks/set-state-in-effect.
+   */
+  const refetch = useCallback(() => {
+    setState((s) => ({ ...s, loading: true, error: null }))
+    setVersion((v) => v + 1)
+  }, [])
 
   useEffect(() => {
     mountedRef.current = true
-    setState((s) => ({ ...s, loading: true, error: null }))
+    let active = true
 
     fn()
       .then((data) => {
-        if (mountedRef.current) setState({ data, loading: false, error: null })
+        if (active && mountedRef.current)
+          setState({ data, loading: false, error: null })
       })
       .catch((err: unknown) => {
-        if (mountedRef.current)
+        if (active && mountedRef.current)
           setState({
-            data: null,
+            data:    null,
             loading: false,
-            error: err instanceof Error ? err.message : 'Error desconocido',
+            error:   err instanceof Error ? err.message : 'Error desconocido',
           })
       })
 
     return () => {
+      active = false
       mountedRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick])
+  }, [...deps, version])
 
   return { ...state, refetch }
 }

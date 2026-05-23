@@ -1,4 +1,5 @@
 export { useAsync }              from './useAsync'
+export { useAuth }               from './useAuth'
 export { useDebounce }           from './useDebounce'
 export { useCitasByDate, useCitasByWeek, useAllCitas } from './useCitas'
 export { useServicios }          from './useServicios'
