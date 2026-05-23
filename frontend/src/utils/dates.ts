@@ -106,9 +106,12 @@ export function buildMonthGrid(isoRef: string): CeldaMes[] {
   const firstDay = new Date(year, month, 1)
   const lastDay  = new Date(year, month + 1, 0)
 
-  // Lunes = 0 … domingo = 6
+  // Convierte el weekday de JS (0=dom) a base-lunes (0=lun … 6=dom)
   const startPad = (firstDay.getDay() + 6) % 7
-  const endPad   = (7 - ((lastDay.getDay() + 1) % 7)) % 7
+  // Posición del último día en la fila (0=lun … 6=dom)
+  // Si lastDay cae en domingo (pos 6) → 0 celdas de relleno; si cae en sábado → 1; etc.
+  const lastPos  = (lastDay.getDay() + 6) % 7
+  const endPad   = lastPos === 6 ? 0 : 6 - lastPos
 
   const cells: CeldaMes[] = []
 

@@ -1,6 +1,12 @@
 /**
  * AuthContext — estado global de autenticación.
- * Persiste el token en localStorage y expone el perfil + rol activo.
+ *
+ * Estrategia de sesión:
+ * - El token JWT lo gestiona el backend como cookie HttpOnly; el front NUNCA
+ *   lo lee ni lo almacena.
+ * - Solo persiste el rol en localStorage (dato no sensible).
+ * - Al montar, llama getMe() para restaurar sesión desde la cookie.
+ * - Registra el interceptor 401 de apiClient para cerrar sesión automáticamente.
  *
  * Solo exporta el componente AuthProvider para cumplir
  * react-refresh/only-export-components.
@@ -9,6 +15,7 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { AuthContext, type AuthState, type Rol } from '../hooks/useAuth'
 import { login as loginService, logout as logoutService, getMe } from '../services/auth.service'
+import { register401Handler } from '../services/apiClient'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -17,7 +24,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading: true,
   })
 
-  // Restaurar sesión al montar
+  const logout = useCallback(async () => {
+    try { await logoutService() } catch { /* ignorar errores de red al cerrar */ }
+    localStorage.removeItem('miturno_rol')
+    setState({ perfil: null, rol: null, loading: false })
+  }, [])
+
+  // Registrar handler 401 para que apiClient llame logout al expirar la sesión
+  useEffect(() => {
+    register401Handler(() => { void logout() })
+  }, [logout])
+
+  // Restaurar sesión al montar (la cookie HttpOnly se envía automáticamente)
   useEffect(() => {
     getMe()
       .then((perfil) => {
@@ -28,17 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (payload: Parameters<typeof loginService>[0]) => {
-    const { token, perfil, rol } = await loginService(payload)
-    localStorage.setItem('miturno_token', token)
+    // El backend devuelve Set-Cookie HttpOnly; solo guardamos perfil y rol
+    const { perfil, rol } = await loginService(payload)
     localStorage.setItem('miturno_rol', rol)
     setState({ perfil, rol, loading: false })
-  }, [])
-
-  const logout = useCallback(async () => {
-    await logoutService()
-    localStorage.removeItem('miturno_token')
-    localStorage.removeItem('miturno_rol')
-    setState({ perfil: null, rol: null, loading: false })
   }, [])
 
   return (

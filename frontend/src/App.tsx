@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * App.tsx — árbol de rutas de MiTurno.
  *
@@ -7,34 +8,39 @@
  *   /registro         → AuthLayout    → RegisterPage
  *   /panel/*          → BarberPanelLayout (requiere rol=barbero)
  *   /admin/*          → AdminPanelLayout  (requiere rol=admin)
+ *
+ * Performance: todas las páginas se cargan bajo demanda (lazy + Suspense).
+ * Los layouts son eager porque se necesitan en el primer render.
+ * El Suspense global vive en main.tsx envolviendo <RouterProvider>.
  */
+import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
-// Layouts
+// Layouts — eager (pequeños, necesarios en el primer frame)
 import { PublicLayout }      from './components/layouts/PublicLayout'
 import { AuthLayout }        from './components/layouts/AuthLayout'
 import { BarberPanelLayout } from './components/layouts/BarberPanelLayout'
 import { AdminPanelLayout }  from './components/layouts/AdminPanelLayout'
 
-// Páginas públicas
-import { LandingPage }   from './pages/public/LandingPage'
-import { LoginPage }     from './pages/public/LoginPage'
-import { RegisterPage }  from './pages/public/RegisterPage'
+// Páginas públicas — lazy
+const LandingPage  = lazy(() => import('./pages/public/LandingPage').then(m => ({ default: m.LandingPage })))
+const LoginPage    = lazy(() => import('./pages/public/LoginPage').then(m => ({ default: m.LoginPage })))
+const RegisterPage = lazy(() => import('./pages/public/RegisterPage').then(m => ({ default: m.RegisterPage })))
 
-// Páginas del panel del barbero
-import { DashboardPage }  from './pages/barber/DashboardPage'
-import { AgendaPage }     from './pages/barber/AgendaPage'
-import { ServiciosPage }  from './pages/barber/ServiciosPage'
-import { HorarioPage }    from './pages/barber/HorarioPage'
-import { HistorialPage }  from './pages/barber/HistorialPage'
+// Páginas del panel del barbero — lazy
+const DashboardPage = lazy(() => import('./pages/barber/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const AgendaPage    = lazy(() => import('./pages/barber/AgendaPage').then(m => ({ default: m.AgendaPage })))
+const ServiciosPage = lazy(() => import('./pages/barber/ServiciosPage').then(m => ({ default: m.ServiciosPage })))
+const HorarioPage   = lazy(() => import('./pages/barber/HorarioPage').then(m => ({ default: m.HorarioPage })))
+const HistorialPage = lazy(() => import('./pages/barber/HistorialPage').then(m => ({ default: m.HistorialPage })))
 
-// Páginas del admin de plataforma
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
-import { BarberosPage }       from './pages/admin/BarberosPage'
-import { SuscripcionesPage }  from './pages/admin/SuscripcionesPage'
-import { PlanesPage }         from './pages/admin/PlanesPage'
-import { PagosPage }          from './pages/admin/PagosPage'
-import { SoportePage }        from './pages/admin/SoportePage'
+// Páginas del admin de plataforma — lazy
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })))
+const BarberosPage       = lazy(() => import('./pages/admin/BarberosPage').then(m => ({ default: m.BarberosPage })))
+const SuscripcionesPage  = lazy(() => import('./pages/admin/SuscripcionesPage').then(m => ({ default: m.SuscripcionesPage })))
+const PlanesPage         = lazy(() => import('./pages/admin/PlanesPage').then(m => ({ default: m.PlanesPage })))
+const PagosPage          = lazy(() => import('./pages/admin/PagosPage').then(m => ({ default: m.PagosPage })))
+const SoportePage        = lazy(() => import('./pages/admin/SoportePage').then(m => ({ default: m.SoportePage })))
 
 export const router = createBrowserRouter([
   // ── Área pública ────────────────────────────────────────────────────────────

@@ -6,11 +6,18 @@
 import { Outlet, Navigate } from 'react-router-dom'
 import '../../styles/public.css'
 import { useAuth } from '../../hooks/useAuth'
+import { LoadingSpinner } from '../atoms/LoadingSpinner'
 
 export function AuthLayout() {
   const { perfil, rol, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '100dvh' }}>
+        <LoadingSpinner label="Verificando sesión…" size="lg" />
+      </div>
+    )
+  }
 
   if (perfil) {
     return <Navigate to={rol === 'admin' ? '/admin/dashboard' : '/panel/dashboard'} replace />

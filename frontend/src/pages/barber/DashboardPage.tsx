@@ -37,19 +37,25 @@ const CitaListItem = memo(function CitaListItem({
 }) {
   const meta = ESTADO_CITA_META[cita.estado]
   return (
-    <li className="cita-row" onClick={() => onOpen(cita)} role="button" tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onOpen(cita)}>
-      <div className="cita-time">
-        <div className="cita-hora">{cita.hora}</div>
-        <div className="cita-dur">{cita.duracion} min</div>
-      </div>
-      <div className="cita-bar" style={{ background: meta.fg }} aria-hidden="true" />
-      <div className="cita-info">
-        <div className="cita-cliente">{cita.cliente}</div>
-        <div className="cita-servicio">{cita.servicio} · {fmtCOP(cita.precio)}</div>
-      </div>
-      <StatusPill estado={cita.estado} />
-      <Icon name="chevron_right" size={16} />
+    <li>
+      <button
+        type="button"
+        className="cita-row"
+        onClick={() => onOpen(cita)}
+        aria-label={`Ver detalle: ${cita.cliente}, ${cita.servicio} a las ${cita.hora}`}
+      >
+        <div className="cita-time">
+          <div className="cita-hora">{cita.hora}</div>
+          <div className="cita-dur">{cita.duracion} min</div>
+        </div>
+        <div className="cita-bar" style={{ background: meta.fg }} aria-hidden="true" />
+        <div className="cita-info">
+          <div className="cita-cliente">{cita.cliente}</div>
+          <div className="cita-servicio">{cita.servicio} · {fmtCOP(cita.precio)}</div>
+        </div>
+        <StatusPill estado={cita.estado} />
+        <Icon name="chevron_right" size={16} />
+      </button>
     </li>
   )
 })

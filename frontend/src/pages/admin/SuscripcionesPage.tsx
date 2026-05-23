@@ -132,24 +132,19 @@ export function SuscripcionesPage() {
             <Card title="Trials activos" flush>
               <ul className="feed" aria-label="Barberos en periodo de prueba">
                 {trials.map((b) => (
-                  <li
-                    key={b.id}
-                    className="feed-item"
-                    onClick={() => onOpen(b)}
-                    style={{ cursor: 'pointer' }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && onOpen(b)}
-                  >
-                    <div className="feed-icon signup">{initials(b.nombre)}</div>
-                    <div>
-                      <div className="feed-title"><strong>{b.nombre}</strong></div>
-                      <div className="feed-sub">{b.barberia} · prueba hasta {b.proxCobro}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="plan-chip" data-plan={b.plan}>{planNombre(b.plan)}</span>
-                      <div className="feed-time" style={{ marginTop: 4 }}>Uso {b.uso}%</div>
-                    </div>
+                  <li key={b.id}>
+                    <button type="button" className="feed-item" style={{ width: '100%', textAlign: 'left' }}
+                      onClick={() => onOpen(b)} aria-label={`Ver suscripción de ${b.nombre}`}>
+                      <div className="feed-icon signup">{initials(b.nombre)}</div>
+                      <div>
+                        <div className="feed-title"><strong>{b.nombre}</strong></div>
+                        <div className="feed-sub">{b.barberia} · prueba hasta {b.proxCobro}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span className="plan-chip" data-plan={b.plan}>{planNombre(b.plan)}</span>
+                        <div className="feed-time" style={{ marginTop: 4 }}>Uso {b.uso}%</div>
+                      </div>
+                    </button>
                   </li>
                 ))}
                 {trials.length === 0 && (
@@ -164,28 +159,17 @@ export function SuscripcionesPage() {
             <Card title="Cuentas en mora" flush>
               <ul className="feed" aria-label="Barberos con cobros pendientes">
                 {morosos.map((b) => (
-                  <li
-                    key={b.id}
-                    className="feed-item"
-                    onClick={() => onOpen(b)}
-                    style={{ cursor: 'pointer' }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && onOpen(b)}
-                  >
-                    <div className="feed-icon churn">
-                      <Icon name="warning" size={14} />
-                    </div>
-                    <div>
-                      <div className="feed-title"><strong>{b.nombre}</strong></div>
-                      <div className="feed-sub">{b.barberia} · cobro fallido {b.proxCobro}</div>
-                    </div>
-                    <button
-                      className="btn ghost-sm"
-                      type="button"
-                      onClick={(e) => { e.stopPropagation() }}
-                    >
-                      Reintentar
+                  <li key={b.id}>
+                    <button type="button" className="feed-item" style={{ width: '100%', textAlign: 'left' }}
+                      onClick={() => onOpen(b)} aria-label={`Ver suscripción de ${b.nombre}`}>
+                      <div className="feed-icon churn">
+                        <Icon name="warning" size={14} />
+                      </div>
+                      <div>
+                        <div className="feed-title"><strong>{b.nombre}</strong></div>
+                        <div className="feed-sub">{b.barberia} · cobro fallido {b.proxCobro}</div>
+                      </div>
+                      <span className="btn ghost-sm">Reintentar</span>
                     </button>
                   </li>
                 ))}
