@@ -3,15 +3,17 @@
 /**
  * Seed SaaS: actualiza barberos existentes con campos SaaS,
  * crea usuarios, planes, un admin y pagos de suscripción de ejemplo.
+ *
+ * Todos los IDs son UUIDs válidos (solo chars hex: 0-9 a-f).
  */
 
-const ADMIN_ID = 'u0000000-0000-0000-0000-000000000001'
-const USER_JUAN_ID = 'u0000000-0000-0000-0000-000000000002'
-const USER_PEDRO_ID = 'u0000000-0000-0000-0000-000000000003'
-const USER_ANDRES_ID = 'u0000000-0000-0000-0000-000000000004'
+const ADMIN_ID    = 'a0000000-0000-0000-0000-000000000001'
+const USER_JUAN_ID  = 'a0000000-0000-0000-0000-000000000002'
+const USER_PEDRO_ID = 'a0000000-0000-0000-0000-000000000003'
+const USER_ANDRES_ID = 'a0000000-0000-0000-0000-000000000004'
 
-const BARBERO_JUAN = 'b0e86958-8686-4e38-967a-0e7845ef2001'
-const BARBERO_PEDRO = 'b0e86958-8686-4e38-967a-0e7845ef2002'
+const BARBERO_JUAN   = 'b0e86958-8686-4e38-967a-0e7845ef2001'
+const BARBERO_PEDRO  = 'b0e86958-8686-4e38-967a-0e7845ef2002'
 const BARBERO_ANDRES = 'b0e86958-8686-4e38-967a-0e7845ef2003'
 
 /** @type {import('sequelize-cli').Migration} */
@@ -163,7 +165,7 @@ module.exports = {
 
     // ── 5. Horario semanal para Andrés ────────────────────────────────────────
     const horarioAndres = Array.from({ length: 7 }, (_, i) => ({
-      id: `hs000000-0000-0000-0000-${String(i).padStart(12, '0')}`,
+      id: `aa000000-0000-0000-0000-${String(i).padStart(12, '0')}`,
       id_barbero: BARBERO_ANDRES,
       idx: i,
       activo: i >= 1 && i <= 6, // Lunes a Sábado
@@ -179,7 +181,7 @@ module.exports = {
     // ── 6. Pagos de suscripción de ejemplo ────────────────────────────────────
     await queryInterface.bulkInsert('pagos_suscripcion', [
       {
-        id: 'ps000001-0000-0000-0000-000000000001',
+        id: 'ab000001-0000-0000-0000-000000000001',
         id_barbero: BARBERO_JUAN,
         plan: 'solo',
         monto: 49000,
@@ -191,7 +193,7 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        id: 'ps000001-0000-0000-0000-000000000002',
+        id: 'ab000001-0000-0000-0000-000000000002',
         id_barbero: BARBERO_JUAN,
         plan: 'solo',
         monto: 49000,
@@ -203,7 +205,7 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        id: 'ps000001-0000-0000-0000-000000000003',
+        id: 'ab000001-0000-0000-0000-000000000003',
         id_barbero: BARBERO_ANDRES,
         plan: 'pro',
         monto: 99000,
@@ -215,7 +217,7 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        id: 'ps000001-0000-0000-0000-000000000004',
+        id: 'ab000001-0000-0000-0000-000000000004',
         id_barbero: BARBERO_ANDRES,
         plan: 'pro',
         monto: 99000,
@@ -227,7 +229,7 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        id: 'ps000001-0000-0000-0000-000000000005',
+        id: 'ab000001-0000-0000-0000-000000000005',
         id_barbero: BARBERO_PEDRO,
         plan: 'estudio',
         monto: 0,
@@ -243,7 +245,7 @@ module.exports = {
     // ── 7. Servicios para Andrés ──────────────────────────────────────────────
     await queryInterface.bulkInsert('servicios', [
       {
-        id: 'sa000001-0000-0000-0000-000000000001',
+        id: 'ac000001-0000-0000-0000-000000000001',
         nombre: 'Corte Clásico',
         duracion: 30,
         descripcion: 'Corte tradicional con tijeras y máquina.',
@@ -253,7 +255,7 @@ module.exports = {
         updated_at: new Date(),
       },
       {
-        id: 'sa000001-0000-0000-0000-000000000002',
+        id: 'ac000001-0000-0000-0000-000000000002',
         nombre: 'Degradado + Barba',
         duracion: 45,
         descripcion: 'Degradado moderno con arreglo de barba incluido.',
@@ -270,8 +272,8 @@ module.exports = {
     await queryInterface.bulkDelete('horarios_semanales', null, {})
     await queryInterface.bulkDelete('servicios', {
       id: [
-        'sa000001-0000-0000-0000-000000000001',
-        'sa000001-0000-0000-0000-000000000002',
+        'ac000001-0000-0000-0000-000000000001',
+        'ac000001-0000-0000-0000-000000000002',
       ],
     })
     await queryInterface.bulkDelete('usuarios', null, {})
