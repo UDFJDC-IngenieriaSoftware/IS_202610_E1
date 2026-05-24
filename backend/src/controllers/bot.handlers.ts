@@ -3,10 +3,17 @@ import { Servicio, Cliente, Barbero, Horario, Cita } from "../models";
 import { ProcedureService } from "../services/procedure.service";
 import { BarberService } from "../services/barber.service";
 import { TimeSlotService } from "../services/time-slot.service";
+import { posix } from "node:path";
+import { AppointmentService } from "../services/appointment.service";
+import { CitaAttributes } from "../models/Cita";
+import { UserService } from "../services/user.service";
 
 const procedureService = new ProcedureService(new Servicio());
 const barberService = new BarberService(procedureService);
 const timeSlotService = new TimeSlotService();
+const appointmentService = new AppointmentService();
+const userService = new UserService();
+
 // --- HANDLERS DE CADA ESTADO ---
 
 export const StateHandlers: Record<
@@ -16,7 +23,9 @@ export const StateHandlers: Record<
   [BotState.INICIO]: handleInicio,
   [BotState.SELECT_BARBER]: handlerSelectBarber,
   [BotState.SELECT_PROCEDURE]: handlerSelectProcedure,
-  [BotState.SELECT_TIME_SLOT]: handlerSelectProcedure,
+  [BotState.SELECT_DATE]: handleSelectDate,
+  [BotState.SELECT_TIME_SLOT]: handleSelectTimeSlot,
+  [BotState.DATA_CONFIRMATION]: handleDataConfirmation,
   [BotState.AGENDANDO_SELECCIONANDO_SERVICIO]:
     handleAgendandoSeleccionandoServicio,
   [BotState.AGENDANDO_SELECCIONANDO_HORARIO]:
@@ -44,6 +53,10 @@ async function handleInicio(
       if (b.email) text += `   📧 Email: ${b.email}\n`;
       text += `\n`;
     });
+
+    session.datosTemporales.user = await userService.getUserByPhone(
+      session.telefono,
+    );
 
     session.datosTemporales.barberListMapping = barberos;
     session.estadoActual = BotState.SELECT_BARBER;
@@ -158,9 +171,54 @@ async function handlerSelectProcedure(
   text += `Precio: ${selectedProcedure.precio}\n`;
   text += `duracion: ${selectedProcedure.duracion}\n`;
 
+  const procedureDates = (await timeSlotService.getDates(selectedProcedure.id))
+    .map((p, idx) => ({ ...p, idx: idx + 1 }))
+    .slice(0, 6);
+
+  if (!procedureDates || !procedureDates.length)
+    return "No hay fechas disponibles para este servicio\n";
+
+  session.datosTemporales.procedureDates = [...procedureDates];
+
+  text += "Éstas son las próximas fechas disponibles:\n";
+
+  procedureDates.forEach((d) => {
+    text += `*${d.idx}.* ${d.fecha}\n`;
+    text += `\n`;
+  });
+
+  text += "Selecciona la fecha deseada\n";
+
+  session.estadoActual = BotState.SELECT_DATE;
+
+  return text;
+}
+
+async function handleSelectDate(
+  session: UserSession,
+  input: string,
+): Promise<string> {
+  const selectedDate = session.datosTemporales.procedureDates?.find(
+    (b) => b.idx === parseInt(input),
+  );
+  if (!selectedDate) {
+    throw new Error("La opción no es correcta");
+  }
+
+  session.datosTemporales.selectedDate = { ...selectedDate };
+
+  let text = "";
+
+  text += `fecha seleccionada: *${selectedDate.fecha}*\n`;
+
   const timeSlots = (
-    await timeSlotService.getProcedureTimeslots(selectedProcedure.id)
-  ).map((t, idx) => ({ ...t, idx: idx + 1 }));
+    await timeSlotService.getProcedureTimeslotsByDate(
+      session.datosTemporales.procedure.id,
+      selectedDate.fecha,
+    )
+  )
+    .map((t, idx) => ({ ...t, idx: idx + 1 }))
+    .slice(0, 11);
 
   if (!timeSlots || !timeSlots.length)
     return "No hay horarios disponibles para este servicio\n";
@@ -171,7 +229,6 @@ async function handlerSelectProcedure(
 
   timeSlots.forEach((b) => {
     text += `*${b.idx}.*\n`;
-    text += `fecha: - ${b.fecha}\n`;
     text += `hora inicio: ${b.horaInicio}\n`;
     text += `hora fin: ${b.horaFin}\n`;
     text += `\n`;
@@ -182,6 +239,56 @@ async function handlerSelectProcedure(
   session.estadoActual = BotState.SELECT_TIME_SLOT;
 
   return text;
+}
+
+async function handleSelectTimeSlot(
+  session: UserSession,
+  input: string,
+): Promise<string> {
+  const selectedTimeSlot = session.datosTemporales.timeSlotsList?.find(
+    (b) => b.idx === parseInt(input),
+  );
+  if (!selectedTimeSlot) {
+    throw new Error("La opción no es correcta");
+  }
+
+  session.datosTemporales.selectedTimeSlot = { ...selectedTimeSlot };
+
+  let text = "";
+
+  text += `horario y fecha seleccionados para el servicio: *${selectedTimeSlot.fecha}: ${selectedTimeSlot.horaInicio} -> ${selectedTimeSlot.horaFin}*\n`;
+
+  text += "¿Confirmas los datos? oprime *1*, 2 para horarios";
+  session.estadoActual = BotState.DATA_CONFIRMATION;
+
+  return text;
+}
+
+async function handleDataConfirmation(
+  session: UserSession,
+  input: string,
+): Promise<string> {
+  if (input === "1") {
+    // registrar pendiente pago
+
+    const appointmentData = {
+      precio: session.datosTemporales.procedure.precio,
+      idHorario: session.datosTemporales.selectedTimeSlot.id,
+      idCliente: session.datosTemporales.user.id,
+      // idCliente: session.datosTemporales.,
+    };
+    await appointmentService.create(appointmentData);
+    //informar cliente de pago del 50%
+    return "Recuerda que debes abonar un 50% para completar el agendamiento\n";
+  }
+
+  if (input === "2") {
+    session.estadoActual = BotState.SELECT_DATE;
+
+    return "Select date\n";
+  }
+
+  return "";
 }
 
 async function handleAgendandoSeleccionandoServicio(
