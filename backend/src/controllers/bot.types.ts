@@ -20,6 +20,7 @@ export interface UserSession {
     apellidos?: string;
     precioCita?: number;
     servicioNombre?: string;
+    barberoNombre?: string;
     fechaHorario?: string;
     horaInicio?: string;
     listaServiciosMapping?: string[];

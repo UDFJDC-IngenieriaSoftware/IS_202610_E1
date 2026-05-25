@@ -1,27 +1,26 @@
+import { env } from "./config/env";
 import { BaseWhatsAppService } from "./whatsapp.interface";
 import { WhatsAppMockService } from "./whatsapp-mock.service";
 import { WhatsAppCloudService } from "./whatsapp.service";
 import { WhatsAppLocalService } from "./whatsapp-local.service";
 
-const env = process.env.NODE_ENV || "development";
-
 function getWhatsAppServiceInstance(): BaseWhatsAppService {
-  if (env === "test") {
-    console.log("🏭 Fábrica: Instanciando Mock Service (pruebas offline)");
+  if (
+    env.nodeEnv === "test" ||
+    (env.nodeEnv === "development" && !env.enableWhatsappLocal)
+  ) {
+    console.log("WhatsApp adapter: mock service");
     return new WhatsAppMockService();
   }
 
-  if (env === "production") {
-    console.log(
-      "🏭 Fábrica: Instanciando Meta Business API Service (producción)",
-    );
+  if (env.nodeEnv === "production") {
+    console.log("WhatsApp adapter: Meta Cloud API");
     return new WhatsAppCloudService();
   }
 
-  console.log("🏭 Fábrica: Instanciando whatsapp-web.js Service (desarrollo)");
+  console.log("WhatsApp adapter: local whatsapp-web.js client");
   return new WhatsAppLocalService();
 }
 
-// Exporta una única instancia única (Singleton) del servicio correspondiente
 const whatsappService = getWhatsAppServiceInstance();
 export default whatsappService;

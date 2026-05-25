@@ -1,0 +1,122 @@
+import axios from "axios";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { env } from "../config/env";
+import { Cita, Pago } from "../models";
+import { HttpError } from "../utils/http";
+
+interface WompiLinkResponse {
+  data: { id: string };
+}
+
+interface WompiTransaction {
+  id: string;
+  status: string;
+  amount_in_cents: number;
+  reference?: string;
+  payment_link_id?: string;
+}
+
+interface WompiEvent {
+  event: string;
+  data: { transaction?: WompiTransaction };
+  sent_at: string;
+  timestamp: number;
+  signature: { properties: string[]; checksum: string };
+}
+
+function serialize(payment: Pago, paymentUrl?: string | null) {
+  return {
+    id: payment.id,
+    bookingId: payment.idCita,
+    amount: payment.monto,
+    status: payment.estado,
+    reference: payment.referencia,
+    transactionId: payment.transactionId,
+    paymentUrl: paymentUrl ?? null,
+  };
+}
+
+function nestedValue(body: WompiEvent, property: string): string {
+  const value = property.split(".").reduce<unknown>((current, part) => {
+    if (!current || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[part];
+  }, body.data);
+  return String(value ?? "");
+}
+
+export class PaymentService {
+  serialize = serialize;
+
+  async createPaymentLink(payment: Pago): Promise<string | null> {
+    if (!env.wompiPrivateKey) return null;
+    try {
+      const response = await axios.post<WompiLinkResponse>(
+        `${env.wompiApiUrl}/payment_links`,
+        {
+          name: `Anticipo cita ${payment.idCita.slice(0, 8)}`,
+          description: "Anticipo de reserva MiTurno",
+          single_use: true,
+          collect_shipping: false,
+          currency: "COP",
+          amount_in_cents: Math.round(payment.monto * 100),
+          sku: payment.idCita,
+          redirect_url: env.paymentRedirectUrl,
+        },
+        { headers: { Authorization: `Bearer ${env.wompiPrivateKey}` } },
+      );
+      const linkId = response.data.data.id;
+      await payment.update({ paymentLinkId: linkId });
+      return `https://checkout.wompi.co/l/${linkId}`;
+    } catch (error) {
+      console.error("Wompi payment link error:", error);
+      throw new HttpError(502, "No fue posible generar el enlace de pago");
+    }
+  }
+
+  verifyEvent(event: WompiEvent, headerChecksum?: string): void {
+    if (!env.wompiEventsSecret) {
+      throw new HttpError(503, "Webhook de pagos no configurado");
+    }
+    const values = event.signature.properties.map((property) => nestedValue(event, property)).join("");
+    const expected = createHash("sha256")
+      .update(`${values}${event.timestamp}${env.wompiEventsSecret}`)
+      .digest("hex")
+      .toUpperCase();
+    const received = (headerChecksum || event.signature.checksum || "").toUpperCase();
+    const expectedBuffer = Buffer.from(expected);
+    const receivedBuffer = Buffer.from(received);
+    if (
+      receivedBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(receivedBuffer, expectedBuffer)
+    ) {
+      throw new HttpError(401, "Firma de evento Wompi invalida");
+    }
+  }
+
+  async handleEvent(event: WompiEvent, headerChecksum?: string): Promise<void> {
+    this.verifyEvent(event, headerChecksum);
+    if (event.event !== "transaction.updated" || !event.data.transaction) return;
+    const transaction = event.data.transaction;
+    const payment = transaction.payment_link_id
+      ? await Pago.findOne({ where: { paymentLinkId: transaction.payment_link_id } })
+      : await Pago.findOne({ where: { referencia: transaction.reference } });
+    if (!payment) return;
+    if (transaction.amount_in_cents !== Math.round(payment.monto * 100)) {
+      throw new HttpError(409, "El valor pagado no corresponde al anticipo");
+    }
+    const paymentStatus: Record<string, string> = {
+      APPROVED: "exitoso",
+      PENDING: "pendiente",
+      DECLINED: "fallido",
+      VOIDED: "fallido",
+      ERROR: "fallido",
+    };
+    const estado = paymentStatus[transaction.status] || "pendiente";
+    await payment.update({ estado, transactionId: transaction.id });
+    if (estado === "exitoso") {
+      await Cita.update({ estado: "confirmada" }, { where: { id: payment.idCita } });
+    }
+  }
+}
+
+export type { WompiEvent };
