@@ -3,10 +3,9 @@ import { Servicio, Cliente, Barbero, Horario, Cita } from "../models";
 import { ProcedureService } from "../services/procedure.service";
 import { BarberService } from "../services/barber.service";
 import { TimeSlotService } from "../services/time-slot.service";
-import { posix } from "node:path";
 import { AppointmentService } from "../services/appointment.service";
-import { CitaAttributes } from "../models/Cita";
 import { UserService } from "../services/user.service";
+import { deleteSession } from "../services/session.service";
 
 const procedureService = new ProcedureService(new Servicio());
 const barberService = new BarberService(procedureService);
@@ -45,7 +44,6 @@ async function handleInicio(
     session.telefono,
   );
 
-  
   if (input === "1") {
     let barberos = await barberService.getAllBarbers();
     barberos = barberos.map((b, idx) => ({ ...b, idx: idx + 1 }));
@@ -536,8 +534,8 @@ async function handleAgendandoConfirmando(
         { where: { id: t.horarioId } },
       );
 
-      // 4. Limpiar la sesión activa del usuario para liberar memoria
-      sesionesActivas.delete(session.telefono);
+      // 4. Limpiar la sesión activa del usuario en Redis
+      await deleteSession(session.telefono);
 
       return (
         `🎉 ¡Excelente, *${t.nombres}*! Tu cita ha sido agendada y confirmada con éxito.\n\n` +
@@ -552,14 +550,13 @@ async function handleAgendandoConfirmando(
   }
 
   if (inputLower === "no") {
-    sesionesActivas.delete(session.telefono);
+    await deleteSession(session.telefono);
     return "❌ Reservación cancelada. Si deseas realizar otra consulta o agendar más adelante, escribe *menú*. ¡Que tengas un excelente día!";
   }
 
   return "⚠️ Respuesta inválida. Por favor, escribe únicamente *SI* para confirmar la cita, o *NO* para cancelarla:";
 }
 
-export const sesionesActivas = new Map<string, UserSession>();
 export const FAQ: Record<string, string> = {
   faq_horario: "🕐 Atendemos de Lunes a Viernes de 8am a 6pm.",
   faq_precio: "💰 Nuestros planes inician desde $12.000 COP.",

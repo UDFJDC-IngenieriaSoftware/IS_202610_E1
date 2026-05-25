@@ -129,6 +129,7 @@ docker compose logs -f nginx
 | **Backend (Node.js)** | `http://localhost:3000` | `3000` | Puerto directo del backend. |
 | **PostgreSQL** | `localhost` | `5432` | **DB:** `bot_db` <br> **User:** `postgres` <br> **Password:** `postgres_password` |
 | **pgAdmin** | `http://localhost:5050` | `5050` | **Email:** `admin@admin.com` <br> **Password:** `admin` |
+| **Redis** | `localhost` | `6379` | Sin contraseña en desarrollo. Almacena las sesiones del bot con clave `session:<telefono>` y TTL de 15 minutos. |
 
 ---
 
@@ -146,6 +147,29 @@ Si necesitas ejecutar scripts, instalar paquetes de prueba o interactuar directa
 ```bash
 docker exec -it whatsapp_bot_backend sh
 ```
+
+### Conectarse a Redis (Terminal)
+Para inspeccionar las sesiones activas del bot guardadas en Redis, abre la consola interactiva `redis-cli` dentro del contenedor:
+```bash
+docker exec -it mi_turno_redis redis-cli
+```
+
+Comandos útiles una vez dentro de `redis-cli`:
+```
+KEYS session:*              # Listar todas las sesiones activas
+GET session:573001234567    # Ver el JSON de una sesión específica
+TTL session:573001234567    # Segundos restantes antes de que la sesión expire
+DBSIZE                      # Cantidad total de claves almacenadas
+MONITOR                     # Stream en vivo de TODOS los comandos (útil para debug)
+FLUSHDB                     # Borrar TODAS las claves (¡solo usar en desarrollo!)
+exit                        # Salir de la consola
+```
+
+> [!TIP]
+> También puedes ejecutar un comando puntual sin entrar a la consola interactiva, por ejemplo:
+> ```bash
+> docker exec -it mi_turno_redis redis-cli KEYS "session:*"
+> ```
 
 ---
 

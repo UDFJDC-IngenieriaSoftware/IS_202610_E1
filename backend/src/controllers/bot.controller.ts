@@ -1,12 +1,16 @@
 import whatsappService from "../whatsapp.factory";
-import { BotState, UserSession, WebhookEntry } from "./bot.types";
+import { BotState, WebhookEntry } from "./bot.types";
 export {
   WebhookEntry,
   WebhookChange,
   WebhookValue,
   WebhookMessage,
 } from "./bot.types";
-import { StateHandlers, sesionesActivas, FAQ } from "./bot.handlers";
+import { StateHandlers, FAQ } from "./bot.handlers";
+import {
+  getOrCreateSession,
+  saveSession,
+} from "../services/session.service";
 
 export async function handleMessage(entry: WebhookEntry): Promise<void> {
   const change = entry.changes?.[0]?.value;
@@ -15,18 +19,8 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
 
   const from = message.from;
 
-  // 1. Obtener o inicializar la sesión del usuario
-  let session = sesionesActivas.get(from);
-  console.log("sesionesActivas", Object.fromEntries(sesionesActivas));
-
-  if (!session) {
-    session = {
-      telefono: from,
-      estadoActual: BotState.INICIO,
-      datosTemporales: {},
-    };
-    sesionesActivas.set(from, session);
-  }
+  // 1. Obtener o inicializar la sesión del usuario (Redis)
+  const session = await getOrCreateSession(from);
 
   // 2. Procesar respuesta de lista interactiva (Meta API)
   if (message.type === "interactive") {
@@ -62,7 +56,7 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
     if (globalTriggers.includes(inputLower)) {
       session.estadoActual = BotState.INICIO;
       session.datosTemporales = {};
-      sesionesActivas.set(from, session);
+      await saveSession(session);
       return whatsappService.sendMenu(from);
     }
 
@@ -71,8 +65,8 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
       StateHandlers[session.estadoActual] || StateHandlers[BotState.INICIO];
     const responseText = await handler(session, input);
 
-    // 5. Persistir el estado actualizado en el almacén de sesiones
-    sesionesActivas.set(from, session);
+    // 5. Persistir el estado actualizado en Redis
+    await saveSession(session);
 
     // 6. Enviar la respuesta por WhatsApp
     return whatsappService.sendText(from, responseText);

@@ -7,6 +7,7 @@ import express, { Request, Response } from "express";
 import { handleMessage, WebhookEntry } from "./src/controllers/bot.controller";
 import { sequelize } from "./src/models";
 import whatsappService from "./src/whatsapp.factory";
+import { connectRedis } from "./src/config/redis";
 
 const app = express();
 app.use(express.json());
@@ -69,6 +70,10 @@ app.get("/", (req: Request, res: Response) => {
 
 // ─── Conexión e Inicialización de la Base de Datos ──────────────────────
 const PORT = process.env.PORT || 3000;
+
+connectRedis().catch((err) => {
+  console.error("⚠️ No se pudo conectar a Redis al arrancar:", err);
+});
 
 sequelize
   .authenticate()
