@@ -22,12 +22,13 @@ export interface UserSession {
     apellidos?: string;
     precioCita?: number;
     servicioNombre?: string;
+    barberoNombre?: string;
     fechaHorario?: string;
     horaInicio?: string;
     listaServiciosMapping?: string[];
     listaHorariosMapping?: string[];
     //
-    user: any;
+    user?: any;
     barberListMapping?: any[];
     barber?: {
       id?: string;
@@ -36,9 +37,9 @@ export interface UserSession {
     proceduresList?: any[];
     procedure?: any;
     procedureDates?: any[];
-    selectedDate: any;
+    selectedDate?: any;
     timeSlotsList?: any[];
-    selectedTimeSlot: any;
+    selectedTimeSlot?: any;
   };
 }
 

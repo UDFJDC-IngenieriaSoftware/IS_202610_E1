@@ -53,37 +53,16 @@ export class ProcedureService {
     });
   }
 
-  async getServicesMenuText(): Promise<string> {
+  async getServicesMenuText(): Promise<any> {
     const procedures = await Servicio.findAll({
-      include: ["barbero"],
+      include: [{ association: "barbero", where: { activo: true } }],
+      raw: true,
+      nest: true,
     });
 
-    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
-    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
+    console.log("getServicesMenuText", JSON.stringify(procedures[0]));
 
-    procedures.forEach((serv) => {
-      const servJson = serv.toJSON() as any;
-      const barberName = servJson.barbero
-        ? `${servJson.barbero.nombres} ${servJson.barbero.apellidos}`
-        : "Barbero";
-
-      const precioFormateado = new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 0,
-      }).format(servJson.precio);
-
-      mensaje += `🔹 *${servJson.nombre}* (por ${barberName})\n`;
-      if (servJson.descripcion) {
-        mensaje += `   📝 _${servJson.descripcion}_\n`;
-      }
-      mensaje += `   💵 Precio: ${precioFormateado}\n`;
-      mensaje += `   ⏱️ Duración: ${servJson.duracion} minutos\n\n`;
-    });
-
-    mensaje += `👉 Para agendar, escribe *menú* y elige la opción que prefieras para comunicarte con nosotros.`;
-
-    return mensaje.trim();
+    return procedures;
   }
 
   async selectProcedure(idProcedure: string): Promise<any | null> {

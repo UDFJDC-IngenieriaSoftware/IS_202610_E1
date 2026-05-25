@@ -41,6 +41,11 @@ async function handleInicio(
   session: UserSession,
   input: string,
 ): Promise<string> {
+  session.datosTemporales.user = await userService.getUserByPhone(
+    session.telefono,
+  );
+
+  
   if (input === "1") {
     let barberos = await barberService.getAllBarbers();
     barberos = barberos.map((b, idx) => ({ ...b, idx: idx + 1 }));
@@ -54,10 +59,6 @@ async function handleInicio(
       text += `\n`;
     });
 
-    session.datosTemporales.user = await userService.getUserByPhone(
-      session.telefono,
-    );
-
     session.datosTemporales.barberListMapping = barberos;
     session.estadoActual = BotState.SELECT_BARBER;
 
@@ -67,7 +68,44 @@ async function handleInicio(
   }
 
   if (input === "2") {
-    return await procedureService.getServicesMenuText();
+    const procedures = (await procedureService.getServicesMenuText())
+      .slice(0, 11)
+      .map((p, idx) => ({ ...p, idx: idx + 1 }));
+
+    const barbeList = procedures.map((p, idx) => ({
+      ...p.barbero,
+      idx: idx + 1,
+    }));
+
+    session.datosTemporales.barberListMapping = [...barbeList];
+
+    session.datosTemporales.proceduresList = [...procedures];
+
+    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
+    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
+
+    procedures.forEach((serv) => {
+      const barberName = serv.barbero
+        ? `${serv.barbero.nombres} ${serv.barbero.apellidos}`
+        : "Barbero";
+
+      const precioFormateado = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0,
+      }).format(serv.precio);
+
+      mensaje += `${serv.idx} 🔹 *${serv.nombre}* (por ${barberName})\n`;
+      if (serv.descripcion) {
+        mensaje += `   📝 _${serv.descripcion}_\n`;
+      }
+      mensaje += `   💵 Precio: ${precioFormateado}\n`;
+      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
+    });
+
+    mensaje += `👉 Escribe el número del servicio que te interesa.`;
+    session.estadoActual = BotState.SELECT_PROCEDURE;
+    return mensaje;
   }
 
   if (input === "3") {
@@ -158,6 +196,16 @@ async function handlerSelectProcedure(
   );
   if (!selectedProcedure) {
     throw new Error("No existe el servicio deseado");
+  }
+
+  if (
+    !session.datosTemporales.barber &&
+    session.datosTemporales.barberListMapping
+  ) {
+    session.datosTemporales.barber =
+      session.datosTemporales.barberListMapping.find(
+        (b) => b.id === selectedProcedure.idBarbero,
+      );
   }
 
   session.datosTemporales.procedure = { ...selectedProcedure };
@@ -332,9 +380,10 @@ async function handleAgendandoSeleccionandoServicio(
   });
 
   if (!horarios.length) {
+    const barberoNombre = session.datosTemporales.barberoNombre || "Barbero";
     session.estadoActual = BotState.INICIO;
     session.datosTemporales = {};
-    return `😔 Lo sentimos, en este momento el barbero *${session.datosTemporales.barberoNombre}* no tiene bloques de horarios libres cargados para *${servJson.nombre}*.\n\nEscribe *menú* para elegir otro servicio o barbero.`;
+    return `😔 Lo sentimos, en este momento el barbero *${barberoNombre}* no tiene bloques de horarios libres cargados para *${servJson.nombre}*.\n\nEscribe *menú* para elegir otro servicio o barbero.`;
   }
 
   // Transicionar al paso 2
