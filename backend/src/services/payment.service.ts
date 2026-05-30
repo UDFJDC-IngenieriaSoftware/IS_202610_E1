@@ -1,9 +1,11 @@
 import axios from "axios";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env";
-import { Cita, Pago, Cliente, Horario } from "../models";
+import { Cita, Pago, Cliente, Horario, Servicio, Barbero } from "../models";
 import { HttpError } from "../utils/http";
 import whatsappService from "../whatsapp.factory";
+import { notificationService } from "./notification.service";
+import logger from "../utils/logger";
 
 interface WompiLinkResponse {
   data: { id: string };
@@ -115,16 +117,51 @@ export class PaymentService {
     const estado = paymentStatus[transaction.status] || "pendiente";
     await payment.update({ estado, transactionId: transaction.id });
 
-    const cita = await Cita.findByPk(payment.idCita);
+    const cita = (await Cita.findByPk(payment.idCita, {
+      include: [
+        { model: Cliente, as: "cliente", required: false },
+        {
+          model: Horario,
+          as: "horario",
+          required: false,
+          include: [{ model: Servicio, as: "servicio", required: false }],
+        },
+      ],
+    })) as any;
+
     if (cita) {
       const cliente = await Cliente.findByPk(cita.idCliente);
       if (cliente) {
         if (estado === "exitoso") {
           await cita.update({ estado: "confirmada" });
+
+          // Send confirmation notification
+          try {
+            if (cita.horario && cita.horario.servicio) {
+              const barbero = await Barbero.findByPk(cita.horario.servicio.idBarbero);
+              const barberName = barbero
+                ? `${barbero.nombres} ${barbero.apellidos}`.trim()
+                : "Barbero";
+
+              const dateTime = `${cita.horario.fecha} ${cita.horario.horaInicio.slice(0, 5)}`;
+              await notificationService.sendBookingConfirmation({
+                customerName: `${cliente.nombres} ${cliente.apellidos}`.trim(),
+                customerPhone: cliente.celular,
+                barberName,
+                serviceName: cita.horario.servicio.nombre,
+                dateTime,
+                bookingId: cita.id as any,
+              });
+            }
+          } catch (error) {
+            logger.error("Error sending booking confirmation", { error: String(error) });
+          }
+
+          // Keep legacy WhatsApp notification for backwards compatibility
           await whatsappService.sendText(
             cliente.celular,
             `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
-          ).catch(console.error);
+          ).catch(logger.error);
         } else if (estado === "fallido") {
           await cita.update({ estado: "cancelada" });
           await Horario.update(
@@ -134,7 +171,7 @@ export class PaymentService {
           await whatsappService.sendText(
             cliente.celular,
             `❌ Lo sentimos. El pago de tu cita a través de PSE fue rechazado por tu banco o falló. Tu reservación ha sido cancelada y el horario liberado.`
-          ).catch(console.error);
+          ).catch(logger.error);
         }
       }
     }

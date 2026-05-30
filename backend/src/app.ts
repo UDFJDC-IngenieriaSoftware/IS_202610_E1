@@ -5,11 +5,16 @@ import { correlationIdMiddleware } from "./middleware/correlation-id";
 import { errorHandler } from "./middleware/error-handler";
 import { createApiRouter, createVersionedRouter } from "./routes";
 import logger from "./utils/logger";
+import { reminderJob } from "./jobs/reminder.job";
+import { sequelize } from "./models";
 
 export function createApp(): express.Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
+
+  // Start reminder job
+  reminderJob.start(sequelize);
 
   app.use(correlationIdMiddleware);
   app.use(apiHeaders);
