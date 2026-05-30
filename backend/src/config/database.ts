@@ -1,4 +1,5 @@
 import { Sequelize } from "sequelize";
+import "./env";
 
 const dbName = process.env.POSTGRES_DB || "bot_db";
 const dbUser = process.env.POSTGRES_USER || "postgres";

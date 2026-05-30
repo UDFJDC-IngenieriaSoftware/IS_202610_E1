@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 const env = process.env.NODE_ENV || 'development';
-dotenv.config({ path: `.env.${env}` });
-dotenv.config();
+dotenv.config({ path: `.env.${env}`, quiet: true });
+dotenv.config({ quiet: true });
 
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = parseInt(process.env.DB_PORT || '5432', 10);
