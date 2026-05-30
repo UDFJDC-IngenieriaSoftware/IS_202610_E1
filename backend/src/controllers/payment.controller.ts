@@ -29,6 +29,21 @@ export async function createPaymentLink(req: AuthenticatedRequest, res: Response
   res.json(payments.serialize(payment, paymentUrl));
 }
 
+export async function refundPayment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const paymentId = requiredString(req.params.paymentId ?? req.body?.paymentId, "paymentId");
+  const reason = req.body?.reason ?? "customer_request";
+
+  // Verify ownership
+  const payment = await Pago.findByPk(paymentId);
+  if (!payment) throw new HttpError(404, "Pago no encontrado");
+
+  const booking = await bookings.getOwned(payment.idCita, req.auth!.sub);
+  if (!booking) throw new HttpError(403, "No tienes permiso para reembolsar este pago");
+
+  await payments.refundPayment(paymentId, reason);
+  res.json({ success: true, message: "Pago reembolsado exitosamente" });
+}
+
 export async function paymentWebhook(req: Request, res: Response): Promise<void> {
   await payments.handleEvent(
     req.body as WompiEvent,

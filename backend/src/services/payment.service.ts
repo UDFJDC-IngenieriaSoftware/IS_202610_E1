@@ -71,8 +71,58 @@ export class PaymentService {
       await payment.update({ paymentLinkId: linkId });
       return `https://checkout.wompi.co/l/${linkId}`;
     } catch (error) {
-      console.error("Wompi payment link error:", error);
+      logger.error("Wompi payment link error", { error: String(error) });
       throw new HttpError(502, "No fue posible generar el enlace de pago");
+    }
+  }
+
+  async refundPayment(paymentId: string, reason: string = "customer_request"): Promise<void> {
+    if (!env.wompiPrivateKey) {
+      throw new HttpError(503, "Servicio de reembolsos no configurado");
+    }
+
+    const payment = await Pago.findByPk(paymentId);
+    if (!payment) {
+      throw new HttpError(404, "Pago no encontrado");
+    }
+
+    if (payment.estado !== "exitoso") {
+      throw new HttpError(409, "Solo se pueden reembolsar pagos exitosos");
+    }
+
+    if (!payment.transactionId) {
+      throw new HttpError(409, "No se puede reembolsar: transacción no identificada");
+    }
+
+    const cita = await Cita.findByPk(payment.idCita);
+    if (!cita) {
+      throw new HttpError(404, "Cita no encontrada");
+    }
+
+    // Check if booking is within 24 hours
+    const bookingDate = new Date(`${cita.idHorario}`);
+    const now = new Date();
+    const hoursDiff = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursDiff < 24) {
+      throw new HttpError(409, "No se pueden reembolsar pagos menos de 24 horas antes de la cita");
+    }
+
+    try {
+      await axios.post(
+        `${env.wompiApiUrl}/transactions/${payment.transactionId}/refunds`,
+        {
+          amount_in_cents: Math.round(payment.monto * 100),
+          reason,
+        },
+        { headers: { Authorization: `Bearer ${env.wompiPrivateKey}` } },
+      );
+
+      await payment.update({ estado: "reembolsado" });
+      logger.info(`Payment refunded successfully`, { paymentId, transactionId: payment.transactionId });
+    } catch (error) {
+      logger.error("Wompi refund error", { error: String(error), paymentId });
+      throw new HttpError(502, "No fue posible procesar el reembolso");
     }
   }
 

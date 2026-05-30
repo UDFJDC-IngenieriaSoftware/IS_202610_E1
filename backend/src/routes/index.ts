@@ -89,6 +89,7 @@ function paymentRoutes(): Router {
   router.use(requireAuth);
   router.get("/:bookingId", asyncHandler(payment.getPayment));
   router.post("/link", validate(paymentSchemas.create), asyncHandler(payment.createPaymentLink));
+  router.post("/:paymentId/refund", asyncHandler(payment.refundPayment));
   return router;
 }
 
