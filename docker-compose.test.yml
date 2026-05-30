@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: miturno_postgres_test
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bot_db_test}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      # Ephemeral volume - automatically cleaned up after tests
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - miturno_test
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: miturno_redis_test
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - miturno_test
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  miturno_test:
+    driver: bridge
