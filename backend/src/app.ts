@@ -1,14 +1,29 @@
 import express, { Request, Response } from "express";
 import { handleMessage, WebhookEntry } from "./controllers/bot.controller";
-import { apiHeaders, errorHandler, notFound, rateLimit } from "./middleware/api";
+import { apiHeaders, notFound, rateLimit } from "./middleware/api";
+import { correlationIdMiddleware } from "./middleware/correlation-id";
+import { errorHandler } from "./middleware/error-handler";
 import { createApiRouter, createVersionedRouter } from "./routes";
+import logger from "./utils/logger";
 
 export function createApp(): express.Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
+
+  app.use(correlationIdMiddleware);
   app.use(apiHeaders);
   app.use(express.json({ limit: "1mb" }));
+
+  app.use((req: Request, res: Response, next) => {
+    logger.info(`${req.method} ${req.path}`, {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+    });
+    next();
+  });
+
   app.use("/api", rateLimit, createApiRouter());
   app.use("/api/v1", rateLimit, createVersionedRouter());
 
@@ -30,7 +45,7 @@ export function createApp(): express.Express {
     res.sendStatus(200);
     const entries: WebhookEntry[] = req.body?.entry ?? [];
     for (const entry of entries) {
-      await handleMessage(entry).catch(console.error);
+      await handleMessage(entry).catch(logger.error);
     }
   };
 
