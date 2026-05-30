@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "tsx watch app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "test:unit": "npm run test",
     "migration:generate": "sequelize-cli migration:generate --name",
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
@@ -23,6 +24,7 @@
     "pg": "^8.11.5",
     "pg-hstore": "^2.3.4",
     "qrcode-terminal": "^0.12.0",
+    "redis": "^4.7.0",
     "sequelize": "^6.37.3",
     "whatsapp-web.js": "^1.34.7"
   },

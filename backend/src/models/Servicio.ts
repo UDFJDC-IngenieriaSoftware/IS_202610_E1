@@ -7,13 +7,14 @@ export interface ServicioAttributes {
   duracion: number;
   descripcion?: string;
   precio: number;
+  activo: boolean;
   idBarbero: string;
   createdAt?: Date;
   updatedAt?: Date;
   barbero?: any;
 }
 
-export interface ServicioCreationAttributes extends Optional<ServicioAttributes, "id" | "descripcion"> {}
+export interface ServicioCreationAttributes extends Optional<ServicioAttributes, "id" | "descripcion" | "activo"> {}
 
 class Servicio extends Model<ServicioAttributes, ServicioCreationAttributes> implements ServicioAttributes {
   declare public id: string;
@@ -21,6 +22,7 @@ class Servicio extends Model<ServicioAttributes, ServicioCreationAttributes> imp
   declare public duracion: number;
   declare public descripcion: string;
   declare public precio: number;
+  declare public activo: boolean;
   declare public idBarbero: string;
 
   declare public readonly createdAt: Date;
@@ -54,6 +56,11 @@ Servicio.init(
         const rawValue = this.getDataValue("precio");
         return rawValue ? parseFloat(rawValue as unknown as string) : 0;
       }
+    },
+    activo: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
     idBarbero: {
       type: DataTypes.UUID,
