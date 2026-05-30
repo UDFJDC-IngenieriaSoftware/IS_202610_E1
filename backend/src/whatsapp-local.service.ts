@@ -103,6 +103,7 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
 ¿En qué puedo ayudarte hoy?
 
 1️⃣ 🕐 Lista de Barberos
+2 🕐 Lista de servicios
     `.trim();
 
     return this.sendText(to, menuText);

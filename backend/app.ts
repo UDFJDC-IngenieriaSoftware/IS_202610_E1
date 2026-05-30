@@ -3,14 +3,19 @@ import { sequelize } from "./src/models";
 import app from "./src/app";
 import { handleMessage, WebhookEntry } from "./src/controllers/bot.controller";
 import whatsappService from "./src/whatsapp.factory";
+import { connectRedis } from "./src/config/redis";
 
 export { app };
 
 async function startWhatsappLocal(): Promise<void> {
-  if (!env.enableWhatsappLocal) return;
+  if (env.nodeEnv !== "development" || !env.enableWhatsappLocal) return;
   const client = await (whatsappService as any).initClient();
+  console.log("✅ WhatsApp conectado");
+  client.on("ready", () => {
+    console.log("✅ WhatsApp listo para recibir mensajes");
+  });
   client.on("message", async (msg: any) => {
-    if (msg.isGroupMsg || msg.isStatus || msg.broadcast) return;
+    if (msg.isGroupMsg || msg.isStatus || msg.broadcast || !msg.from.endsWith("@c.us")) return;
     const entry: WebhookEntry = {
       changes: [
         {
@@ -31,22 +36,35 @@ async function startWhatsappLocal(): Promise<void> {
 }
 
 export async function startServer(): Promise<void> {
+  await connectRedis().catch((err) => {
+    console.error("⚠️ No se pudo conectar a Redis al arrancar:", err);
+  });
+
+  let dbReady = false;
   try {
     await sequelize.authenticate();
-    if (env.nodeEnv === "development" && process.env.DB_SYNC === "true") {
+    console.log("✅ Conexión con PostgreSQL establecida exitosamente.");
+    if (env.nodeEnv === "development") {
       await sequelize.sync({ alter: true });
+      console.log("🔄 Tablas de la base de datos sincronizadas con éxito.");
     }
-    console.log("Database connection established.");
+    dbReady = true;
   } catch (error) {
-    console.error("Database unavailable:", error);
-    if (env.nodeEnv !== "development") throw error;
+    console.error("❌ Error al conectar con PostgreSQL:", error);
+    if (env.nodeEnv !== "development") {
+      process.exit(1);
+    }
   }
 
   await startWhatsappLocal().catch((error) => {
     console.error("Local WhatsApp client could not start:", error);
   });
+
   app.listen(env.port, () => {
-    console.log(`MiTurno API listening on port ${env.port} [${env.nodeEnv}]`);
+    const suffix = dbReady ? "" : " (Sin conexión a BD)";
+    console.log(
+      `🚀 MiTurno API listening on port ${env.port} [${env.nodeEnv}]${suffix}`,
+    );
   });
 }
 

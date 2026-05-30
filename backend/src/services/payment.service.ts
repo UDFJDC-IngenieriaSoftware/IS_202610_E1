@@ -1,8 +1,9 @@
 import axios from "axios";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env";
-import { Cita, Pago } from "../models";
+import { Cita, Pago, Cliente, Horario } from "../models";
 import { HttpError } from "../utils/http";
+import whatsappService from "../whatsapp.factory";
 
 interface WompiLinkResponse {
   data: { id: string };
@@ -113,8 +114,29 @@ export class PaymentService {
     };
     const estado = paymentStatus[transaction.status] || "pendiente";
     await payment.update({ estado, transactionId: transaction.id });
-    if (estado === "exitoso") {
-      await Cita.update({ estado: "confirmada" }, { where: { id: payment.idCita } });
+
+    const cita = await Cita.findByPk(payment.idCita);
+    if (cita) {
+      const cliente = await Cliente.findByPk(cita.idCliente);
+      if (cliente) {
+        if (estado === "exitoso") {
+          await cita.update({ estado: "confirmada" });
+          await whatsappService.sendText(
+            cliente.celular,
+            `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
+          ).catch(console.error);
+        } else if (estado === "fallido") {
+          await cita.update({ estado: "cancelada" });
+          await Horario.update(
+            { estado: "libre" },
+            { where: { id: cita.idHorario } }
+          );
+          await whatsappService.sendText(
+            cliente.celular,
+            `❌ Lo sentimos. El pago de tu cita a través de PSE fue rechazado por tu banco o falló. Tu reservación ha sido cancelada y el horario liberado.`
+          ).catch(console.error);
+        }
+      }
     }
   }
 }

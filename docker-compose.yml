@@ -10,6 +10,7 @@ services:
       - backend_wwebjs_cache:/app/.wwebjs_cache
     depends_on:
       - database
+      - redis
 
   # ─── DATABASE SERVICE (PostgreSQL) ──────────────────────────────────────
   database:
@@ -17,6 +18,14 @@ services:
     container_name: mi_turno_database
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  # ─── REDIS SERVICE (Sesiones de usuario / cache) ────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: mi_turno_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
 
   # ─── NGINX SERVICE (Reverse Proxy) ──────────────────────────────────────
   nginx:
@@ -37,4 +46,6 @@ volumes:
   backend_wwebjs_auth:
     driver: local
   backend_wwebjs_cache:
+    driver: local
+  redis_data:
     driver: local

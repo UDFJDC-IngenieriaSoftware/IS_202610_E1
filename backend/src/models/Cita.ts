@@ -11,9 +11,15 @@ export interface CitaAttributes {
   updatedAt?: Date;
 }
 
-export interface CitaCreationAttributes extends Optional<CitaAttributes, "id" | "estado"> {}
+export interface CitaCreationAttributes extends Optional<
+  CitaAttributes,
+  "id" | "estado"
+> {}
 
-class Cita extends Model<CitaAttributes, CitaCreationAttributes> implements CitaAttributes {
+class Cita
+  extends Model<CitaAttributes, CitaCreationAttributes>
+  implements CitaAttributes
+{
   declare public id: string;
   declare public estado: string;
   declare public precio: number;
@@ -43,7 +49,7 @@ Cita.init(
       get() {
         const rawValue = this.getDataValue("precio");
         return rawValue ? parseFloat(rawValue as unknown as string) : 0;
-      }
+      },
     },
     idHorario: {
       type: DataTypes.UUID,
@@ -60,7 +66,7 @@ Cita.init(
     sequelize,
     modelName: "Cita",
     tableName: "citas",
-  }
+  },
 );
 
 export default Cita;
