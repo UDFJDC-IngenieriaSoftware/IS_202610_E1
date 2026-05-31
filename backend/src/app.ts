@@ -1,6 +1,11 @@
 import express, { Request, Response } from "express";
 import { handleMessage, WebhookEntry } from "./controllers/bot.controller";
-import { apiHeaders, errorHandler, notFound, rateLimit } from "./middleware/api";
+import {
+  apiHeaders,
+  errorHandler,
+  notFound,
+  rateLimit,
+} from "./middleware/api";
 import { createApiRouter, createVersionedRouter } from "./routes";
 
 export function createApp(): express.Express {
@@ -9,7 +14,11 @@ export function createApp(): express.Express {
   app.set("trust proxy", 1);
   app.use(apiHeaders);
   app.use(express.json({ limit: "1mb" }));
-  app.use("/api", rateLimit, createApiRouter());
+  app.use(
+    "/api",
+    // rateLimit,
+    createApiRouter(),
+  );
   app.use("/api/v1", rateLimit, createVersionedRouter());
 
   app.get("/health", (_req: Request, res: Response) => {
@@ -38,6 +47,10 @@ export function createApp(): express.Express {
   app.post("/webhook", receiveWebhook);
   app.get("/api/v1/webhook/whatsapp", verifyWebhook);
   app.post("/api/v1/webhook/whatsapp", receiveWebhook);
+  // app.post("/api/pagos/webhook", (req, res, next) => {
+  //   res.sendStatus(200);
+  //   console.log("/api/pagos/webhook", JSON.stringify(req.body));
+  // });
 
   app.get("/", (_req: Request, res: Response) => {
     res.json({ status: "success", message: "MiTurno API funcionando" });

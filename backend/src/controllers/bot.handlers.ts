@@ -324,12 +324,10 @@ async function handleDataConfirmation(
     };
     const newAppointment = await appointmentService.create(appointmentData);
 
-    const newPayment = await paymentService.createPayment({
+    const paymentLink = await paymentService.createPaymentLink({
       id: newAppointment.id,
       precio: appointmentData.precio,
     });
-
-    const paymentLink = await paymentService.createPaymentLink(newPayment);
 
     let message =
       "Recuerda que debes abonar un 50% para completar el agendamiento\n";

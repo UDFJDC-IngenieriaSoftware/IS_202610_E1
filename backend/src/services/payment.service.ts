@@ -67,9 +67,11 @@ export class PaymentService {
     return newPayment;
   }
 
-  async createPaymentLink(payment: Pago): Promise<string | null> {
-    console.log("createPaymentLink", { payment });
-    console.log("createPaymentLink env ->", { env });
+  async createPaymentLink(paymentData: {
+    precio: number;
+    id: string;
+  }): Promise<string | null> {
+    const payment = await this.createPayment(paymentData);
 
     if (!env.wompiPrivateKey) throw Error("wompiPrivateKey does not exist");
 
@@ -97,7 +99,6 @@ export class PaymentService {
         headers,
       );
 
-      // console.log("wompi response", JSON.stringify(response));
       console.log("wompi response data", JSON.stringify(response.data));
 
       const linkId = response.data.data.id;
@@ -112,7 +113,10 @@ export class PaymentService {
   }
 
   verifyEvent(event: WompiEvent, headerChecksum?: string): void {
+    console.log("verifyEvent", JSON.stringify({ event, headerChecksum }));
+
     if (!env.wompiEventsSecret) {
+      console.log("Webhook de pagos no configurado");
       throw new HttpError(503, "Webhook de pagos no configurado");
     }
     const values = event.signature.properties
@@ -133,22 +137,40 @@ export class PaymentService {
       receivedBuffer.length !== expectedBuffer.length ||
       !timingSafeEqual(receivedBuffer, expectedBuffer)
     ) {
+      console.log("Firma de evento Wompi invalida");
+
       throw new HttpError(401, "Firma de evento Wompi invalida");
     }
   }
 
   async handleEvent(event: WompiEvent, headerChecksum?: string): Promise<void> {
-    this.verifyEvent(event, headerChecksum);
-    if (event.event !== "transaction.updated" || !event.data.transaction)
-      return;
+    console.log("handleEvent service", JSON.stringify(event));
+
+    // this.verifyEvent(event, headerChecksum);
+    if (event.event !== "transaction.updated" || !event.data.transaction) {
+      throw new HttpError(400, "transaction no event");
+    }
+
+    console.log("verified");
+
     const transaction = event.data.transaction;
     const payment = transaction.payment_link_id
       ? await Pago.findOne({
           where: { paymentLinkId: transaction.payment_link_id },
         })
       : await Pago.findOne({ where: { referencia: transaction.reference } });
-    if (!payment) return;
+    console.log("payment", JSON.stringify({ payment }));
+
+    if (!payment) {
+      throw new HttpError(
+        500,
+        "Pago no ha sido encontrado para: ",
+        JSON.stringify(transaction),
+      );
+    }
     if (transaction.amount_in_cents !== Math.round(payment.monto * 100)) {
+      console.log("El valor pagado no corresponde al anticipo");
+
       throw new HttpError(409, "El valor pagado no corresponde al anticipo");
     }
     const paymentStatus: Record<string, string> = {
