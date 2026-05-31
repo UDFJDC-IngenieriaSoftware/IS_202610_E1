@@ -29,7 +29,20 @@ module.exports = {
       }
     ], {});
 
-    // 2. Insertar Servicios ligados a Barberos
+    // 2. Insertar Clientes de prueba
+    await queryInterface.bulkInsert('clientes', [
+      {
+        id: 'c0e86958-8686-4e38-967a-0e7845ef2001',
+        nombres: 'Andrés',
+        apellidos: 'Demo',
+        email: 'demo@miturno.com',
+        celular: '573057466435',
+        created_at: new Date(),
+        updated_at: new Date()
+      }
+    ], {});
+
+    // 3. Insertar Servicios ligados a Barberos
     await queryInterface.bulkInsert('servicios', [
       {
         id: 'a0e86958-8686-4e38-967a-0e7845ef2001',
@@ -87,7 +100,7 @@ module.exports = {
     await queryInterface.bulkInsert('horarios', [
       {
         id: 'f0e86958-8686-4e38-967a-0e7845ef2001',
-        fecha: '2026-05-23',
+        fecha: '2026-06-23',
         hora_inicio: '09:00:00',
         hora_fin: '09:30:00',
         estado: 'disponible',
@@ -97,7 +110,7 @@ module.exports = {
       },
       {
         id: 'f0e86958-8686-4e38-967a-0e7845ef2002',
-        fecha: '2026-05-23',
+        fecha: '2026-06-23',
         hora_inicio: '10:00:00',
         hora_fin: '10:30:00',
         estado: 'disponible',
@@ -107,7 +120,7 @@ module.exports = {
       },
       {
         id: 'f0e86958-8686-4e38-967a-0e7845ef2003',
-        fecha: '2026-05-23',
+        fecha: '2026-06-23',
         hora_inicio: '11:00:00',
         hora_fin: '11:20:00',
         estado: 'disponible',
@@ -117,7 +130,7 @@ module.exports = {
       },
       {
         id: 'f0e86958-8686-4e38-967a-0e7845ef2004',
-        fecha: '2026-05-23',
+        fecha: '2026-06-23',
         hora_inicio: '14:00:00',
         hora_fin: '14:25:00',
         estado: 'disponible',
@@ -129,9 +142,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Eliminar en orden inverso
+    // Eliminar en orden inverso respetando FKs
     await queryInterface.bulkDelete('horarios', null, {});
     await queryInterface.bulkDelete('servicios', null, {});
     await queryInterface.bulkDelete('barberos', null, {});
+    await queryInterface.bulkDelete('clientes', null, {});
   }
 };

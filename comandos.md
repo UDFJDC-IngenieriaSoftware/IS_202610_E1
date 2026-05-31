@@ -177,61 +177,86 @@ exit                        # Salir de la consola
 
 El proyecto utiliza **`sequelize-cli`** para gestionar los cambios en la estructura de la base de datos de manera profesional y controlada. Las migraciones se definen en la carpeta `migrations/` y los datos de prueba iniciales (seeders) en la carpeta `seeders/`.
 
----
-
-### 💻 5.1 Ejecución desde la máquina principal (Host)
-
-Puedes ejecutar los comandos directamente desde tu terminal local (dentro de la carpeta `backend`), gracias a que el entorno de desarrollo expone el puerto `5432` hacia el exterior.
-
-*   **Limpiar por completo la base de datos (Reset a cero):**
-    > [!CAUTION]
-    > Esto borrará de forma definitiva todas las tablas y datos del esquema público en Postgres. Úsalo solo en desarrollo.
-    ```bash
-    npx tsx drop-tables.ts
-    ```
-*   **Ejecutar todas las migraciones pendientes (Creación de Tablas):**
-    ```bash
-    npm run migrate
-    ```
-*   **Revertir la última migración aplicada (Deshacer cambios):**
-    ```bash
-    npm run migrate:undo
-    ```
-*   **Poblar la base de datos con datos de prueba (Seeders de Barberos, Servicios y Horarios):**
-    ```bash
-    npm run seed
-    ```
-*   **Revertir todos los datos sembrados (Vaciar semillas):**
-    ```bash
-    npm run seed:undo
-    ```
-*   **Ciclo de recreación completa de desarrollo (Recomendado al cambiar el esquema):**
-    ```bash
-    npx tsx drop-tables.ts && npm run migrate && npm run seed
-    ```
+> [!IMPORTANT]
+> **Todos los comandos de migración y seed deben ejecutarse siempre dentro del contenedor**, ya sea a través de `make` o de `docker exec` directamente. Correrlos desde el host (`npm run migrate` dentro de `backend/`) puede conectarse a una BD diferente o con variables de entorno incorrectas, dejando el esquema en un estado parcial difícil de recuperar.
 
 ---
 
-### 🐳 5.2 Ejecución dentro del contenedor de Docker
+### 🚀 5.1 Primera vez (arranque desde cero)
 
-Si estás desplegando o no tienes Node.js/tsx instalado localmente en el host, puedes inyectar los comandos directamente dentro del contenedor del backend corriendo:
+El comando recomendado hace todo en secuencia: destruye volúmenes, levanta los contenedores, espera que Postgres esté listo y corre migraciones + seeders.
 
-*   **Correr migraciones dentro de Docker:**
-    ```bash
-    docker exec -it mi_turno_backend npm run migrate
-    ```
-*   **Correr seeders dentro de Docker:**
-    ```bash
-    docker exec -it mi_turno_backend npm run seed
-    ```
-*   **Deshacer la última migración dentro de Docker:**
-    ```bash
-    docker exec -it mi_turno_backend npm run migrate:undo
-    ```
+```bash
+make fresh-start
+```
+
+Equivalente manual si no usas `make`:
+```bash
+# 1. Destruir volúmenes y levantar contenedores frescos
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# 2. Esperar que Postgres acepte conexiones
+until docker exec mi_turno_database pg_isready -U postgres -q; do sleep 1; done
+
+# 3. Migrar y sembrar (desde dentro del contenedor)
+docker exec mi_turno_backend npm run migrate
+docker exec mi_turno_backend npm run seed
+```
 
 ---
 
-### 🧪 5.3 Pruebas y Validación del Bot en Local (Simulación)
+### 🔄 5.2 Operaciones del día a día
+
+Todos estos comandos requieren que los contenedores estén corriendo (`make dev`).
+
+*   **Ejecutar migraciones pendientes:**
+    ```bash
+    make migrate
+    ```
+*   **Revertir la última migración:**
+    ```bash
+    make migrate-undo
+    ```
+*   **Sembrar datos de prueba:**
+    ```bash
+    make seed
+    ```
+*   **Revertir seeders (vaciar datos de prueba):**
+    ```bash
+    make seed-undo
+    ```
+*   **Ciclo rápido al cambiar un seeder (datos intactos el esquema):**
+    ```bash
+    make seed-undo && make seed
+    ```
+
+> [!NOTE]
+> Los seeders **no se rastrean**: `make seed` siempre intenta insertar todos los registros desde cero. Si los datos ya existen, fallará con error de clave duplicada. Siempre corre `make seed-undo` antes de volver a sembrar.
+
+---
+
+### 💥 5.3 Reset del esquema (sin destruir volúmenes)
+
+Útil cuando cambiaste migraciones y quieres recrear el esquema sin reiniciar Docker. Corre `drop-tables.ts` desde dentro del contenedor para garantizar la conexión correcta.
+
+> [!CAUTION]
+> Borra todas las tablas y datos del esquema público. Úsalo solo en desarrollo.
+
+```bash
+make db-reset
+```
+
+Equivalente manual:
+```bash
+docker exec mi_turno_backend npx tsx drop-tables.ts
+docker exec mi_turno_backend npm run migrate
+docker exec mi_turno_backend npm run seed
+```
+
+---
+
+### 🧪 5.4 Pruebas y Validación del Bot en Local (Simulación)
 
 Si deseas probar la máquina de estados conversacional y el flujo de agendamiento de citas paso a paso en consola de manera interactiva sin usar la red celular, corre:
 
