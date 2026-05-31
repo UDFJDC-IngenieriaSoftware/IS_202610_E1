@@ -15,7 +15,13 @@ async function startWhatsappLocal(): Promise<void> {
     console.log("✅ WhatsApp listo para recibir mensajes");
   });
   client.on("message", async (msg: any) => {
-    if (msg.isGroupMsg || msg.isStatus || msg.broadcast || !msg.from.endsWith("@c.us")) return;
+    if (
+      msg.isGroupMsg ||
+      msg.isStatus ||
+      msg.broadcast ||
+      !msg.from.endsWith("@c.us")
+    )
+      return;
     const entry: WebhookEntry = {
       changes: [
         {
