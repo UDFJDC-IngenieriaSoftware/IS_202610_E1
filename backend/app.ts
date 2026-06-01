@@ -15,20 +15,30 @@ async function startWhatsappLocal(): Promise<void> {
     console.log("✅ WhatsApp listo para recibir mensajes");
   });
   client.on("message", async (msg: any) => {
+    console.log("onMessage", JSON.stringify(msg));
+
     if (
       msg.isGroupMsg ||
       msg.isStatus ||
-      msg.broadcast ||
-      !msg.from.endsWith("@c.us")
+      msg.broadcast
+      // !msg.from.endsWith("@c.us")
     )
       return;
+
+    console.log("pasa", msg.body);
+    console.log("getContact");
+
+    const contact = await msg.getContact();
+    const phoneRequest = contact.id._serialized;
+    //se puede sacar el nombre y otra info para crear el usuario al principio
     const entry: WebhookEntry = {
       changes: [
         {
           value: {
             messages: [
               {
-                from: msg.from.replace("@c.us", ""),
+                from: phoneRequest.replace("@c.us", ""),
+                // from: msg.from.replace("@c.us", ""),
                 type: "text",
                 text: { body: msg.body },
               },

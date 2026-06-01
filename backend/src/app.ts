@@ -36,6 +36,8 @@ export function createApp(): express.Express {
   };
 
   const receiveWebhook = async (req: Request, res: Response): Promise<void> => {
+    console.log("receiveWebhook", JSON.stringify(req.body));
+
     res.sendStatus(200);
     const entries: WebhookEntry[] = req.body?.entry ?? [];
     for (const entry of entries) {
@@ -47,10 +49,6 @@ export function createApp(): express.Express {
   app.post("/webhook", receiveWebhook);
   app.get("/api/v1/webhook/whatsapp", verifyWebhook);
   app.post("/api/v1/webhook/whatsapp", receiveWebhook);
-  // app.post("/api/pagos/webhook", (req, res, next) => {
-  //   res.sendStatus(200);
-  //   console.log("/api/pagos/webhook", JSON.stringify(req.body));
-  // });
 
   app.get("/", (_req: Request, res: Response) => {
     res.json({ status: "success", message: "MiTurno API funcionando" });
