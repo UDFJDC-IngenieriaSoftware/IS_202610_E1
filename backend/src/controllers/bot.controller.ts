@@ -7,12 +7,11 @@ export {
   WebhookMessage,
 } from "./bot.types";
 import { StateHandlers, FAQ } from "./bot.handlers";
-import {
-  getOrCreateSession,
-  saveSession,
-} from "../services/session.service";
+import { getOrCreateSession, saveSession } from "../services/session.service";
 
 export async function handleMessage(entry: WebhookEntry): Promise<void> {
+  console.log("handleMessage", JSON.stringify(entry));
+
   const change = entry.changes?.[0]?.value;
   const message = change?.messages?.[0];
   if (!message) return;

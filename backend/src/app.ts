@@ -1,6 +1,11 @@
 import express, { Request, Response } from "express";
 import { handleMessage, WebhookEntry } from "./controllers/bot.controller";
-import { apiHeaders, errorHandler, notFound, rateLimit } from "./middleware/api";
+import {
+  apiHeaders,
+  errorHandler,
+  notFound,
+  rateLimit,
+} from "./middleware/api";
 import { createApiRouter, createVersionedRouter } from "./routes";
 
 export function createApp(): express.Express {
@@ -9,7 +14,11 @@ export function createApp(): express.Express {
   app.set("trust proxy", 1);
   app.use(apiHeaders);
   app.use(express.json({ limit: "1mb" }));
-  app.use("/api", rateLimit, createApiRouter());
+  app.use(
+    "/api",
+    // rateLimit,
+    createApiRouter(),
+  );
   app.use("/api/v1", rateLimit, createVersionedRouter());
 
   app.get("/health", (_req: Request, res: Response) => {
@@ -27,6 +36,8 @@ export function createApp(): express.Express {
   };
 
   const receiveWebhook = async (req: Request, res: Response): Promise<void> => {
+    console.log("receiveWebhook", JSON.stringify(req.body));
+
     res.sendStatus(200);
     const entries: WebhookEntry[] = req.body?.entry ?? [];
     for (const entry of entries) {

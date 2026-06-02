@@ -13,6 +13,7 @@ const barberService = new BarberService(procedureService);
 const timeSlotService = new TimeSlotService();
 const appointmentService = new AppointmentService();
 const userService = new UserService();
+const paymentService = new PaymentService();
 
 // --- HANDLERS DE CADA ESTADO ---
 
@@ -316,17 +317,24 @@ async function handleDataConfirmation(
   input: string,
 ): Promise<string> {
   if (input === "1") {
-    // registrar pendiente pago
-
     const appointmentData = {
       precio: session.datosTemporales.procedure.precio,
       idHorario: session.datosTemporales.selectedTimeSlot.id,
       idCliente: session.datosTemporales.user.id,
-      // idCliente: session.datosTemporales.,
     };
-    await appointmentService.create(appointmentData);
-    //informar cliente de pago del 50%
-    return "Recuerda que debes abonar un 50% para completar el agendamiento\n";
+    const newAppointment = await appointmentService.create(appointmentData);
+
+    const paymentLink = await paymentService.createPaymentLink({
+      id: newAppointment.id,
+      precio: appointmentData.precio,
+    });
+
+    let message =
+      "Recuerda que debes abonar un 50% para completar el agendamiento\n";
+
+    message += `-> link de pago: ${paymentLink}\n`;
+
+    return message;
   }
 
   if (input === "2") {
