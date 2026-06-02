@@ -97,9 +97,17 @@ fresh-start:
 test-bot:
 	cd backend && DB_HOST=localhost NODE_ENV=test npx tsx test-bot.ts
 
+# ──────────────────────────────────────────────────────────────────
+#  Túnel público (Cloudflare Quick Tunnel)
+#  Expone el nginx local (puerto 80) con una URL HTTPS pública.
+#  Útil para recibir webhooks de WhatsApp en desarrollo.
+# ──────────────────────────────────────────────────────────────────
+tunnel:
+	cloudflared tunnel --url http://localhost:80
+
 .PHONY: dev dev-build dev-down dev-reset \
         prod prod-build prod-down \
         ps logs logs-backend logs-db logs-nginx \
         shell-backend shell-db shell-redis \
         migrate migrate-undo seed seed-undo db-reset fresh-start \
-        test-bot
+        test-bot tunnel

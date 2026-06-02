@@ -264,3 +264,43 @@ Si deseas probar la máquina de estados conversacional y el flujo de agendamient
 DB_HOST=localhost NODE_ENV=test npx tsx test-bot.ts
 ```
 
+---
+
+## 🌍 6. Túnel Público con Cloudflare (Webhooks de WhatsApp)
+
+Para que la API de WhatsApp pueda entregar mensajes a tu entorno local, necesita una URL **pública con HTTPS**. Cloudflare ofrece *Quick Tunnels* que generan una URL temporal apuntando a tu nginx local **sin necesidad de cuenta, login ni dominio propio**.
+
+> [!NOTE]
+> `cloudflared` ya está instalado en este equipo (el instalador `cloudflared-linux-amd64.deb` está en la raíz del repo). En una máquina nueva instálalo con:
+> ```bash
+> sudo dpkg -i cloudflared-linux-amd64.deb
+> ```
+
+### 6.1 Levantar el túnel
+
+Con los contenedores corriendo (`make dev`), en una terminal aparte:
+
+```bash
+make tunnel
+```
+
+Equivalente manual:
+```bash
+cloudflared tunnel --url http://localhost:80
+```
+
+El comando imprime en consola una URL del tipo `https://<aleatorio>.trycloudflare.com`. Esa URL apunta a tu **nginx local** (puerto 80) con HTTPS. Úsala como callback del webhook añadiendo la ruta correspondiente, por ejemplo:
+
+```
+https://<aleatorio>.trycloudflare.com/webhook
+```
+
+> [!IMPORTANT]
+> El Quick Tunnel es **efímero**: la URL cambia cada vez que reinicias el comando y el túnel muere al cerrar la terminal (`Ctrl+C`). Tras cada reinicio debes volver a registrar la nueva URL en la configuración del webhook de WhatsApp.
+
+> [!TIP]
+> Si prefieres exponer el backend directamente (saltándote nginx), apunta el túnel al puerto 3000:
+> ```bash
+> cloudflared tunnel --url http://localhost:3000
+> ```
+
