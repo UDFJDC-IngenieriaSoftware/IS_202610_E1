@@ -26,17 +26,17 @@ export async function getPayment(
   res.json(payments.serialize(await ownedPayment(req)));
 }
 
-export async function createPaymentLink(
-  req: AuthenticatedRequest,
-  res: Response,
-): Promise<void> {
-  const payment = await ownedPayment(req);
-  const paymentUrl = await payments.createPaymentLink(payment);
-  if (!paymentUrl) {
-    throw new HttpError(503, "Wompi no esta configurado en este entorno");
-  }
-  res.json(payments.serialize(payment, paymentUrl));
-}
+// export async function createPaymentLink(
+//   req: AuthenticatedRequest,
+//   res: Response,
+// ): Promise<void> {
+//   const payment = await ownedPayment(req);
+//   const paymentUrl = await payments.createPaymentLink(payment);
+//   if (!paymentUrl) {
+//     throw new HttpError(503, "Wompi no esta configurado en este entorno");
+//   }
+//   res.json(payments.serialize(payment, paymentUrl));
+// }
 
 export async function paymentWebhook(
   req: Request,

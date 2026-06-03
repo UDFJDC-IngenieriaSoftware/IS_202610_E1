@@ -8,7 +8,7 @@ import { connectRedis } from "./src/config/redis";
 export { app };
 
 async function startWhatsappLocal(): Promise<void> {
-  if (env.nodeEnv !== "development" || !env.enableWhatsappLocal) return;
+  // if (env.nodeEnv !== "development" || !env.enableWhatsappLocal) return;
   const client = await (whatsappService as any).initClient();
   console.log("✅ WhatsApp conectado");
   client.on("ready", () => {
