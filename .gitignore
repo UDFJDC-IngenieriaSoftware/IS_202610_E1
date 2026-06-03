@@ -41,6 +41,9 @@ Thumbs.db
 .antigravitycli/
 .claude/settings.local.json
 
+# Notas/documentación local (no compartir: credenciales, IDs de infraestructura)
+.local-docs/
+
 # whatsapp-web.js session / cache
 .wwebjs_auth/
 .wwebjs_cache/
