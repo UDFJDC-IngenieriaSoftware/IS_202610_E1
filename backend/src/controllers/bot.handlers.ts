@@ -22,6 +22,18 @@ const formatCOP = (value: number): string =>
     minimumFractionDigits: 0,
   }).format(value);
 
+// Renderiza la lista de fechas disponibles (sin cambiar el estado).
+const renderDatesList = (
+  dates: { idx: number; fecha: string }[],
+): string => {
+  let text = `📅 *Próximas fechas disponibles:*\n\n`;
+  dates.forEach((d) => {
+    text += `*${d.idx}.* ${d.fecha}\n`;
+  });
+  text += `\n👉 Responde con el número de la fecha.`;
+  return text;
+};
+
 // --- HANDLERS DE CADA ESTADO ---
 
 export const StateHandlers: Record<
@@ -107,7 +119,7 @@ async function handlerSelectBarber(
     (b) => b.idx === parseInt(input),
   );
   if (!selectedBarber) {
-    throw new Error("No existe el barbero");
+    return "🤔 No encontré ese barbero. Responde con el número de la lista.";
   }
 
   session.datosTemporales.barber = { ...selectedBarber };
@@ -141,7 +153,7 @@ async function handlerSelectProcedure(
     (b) => b.idx === parseInt(input),
   );
   if (!selectedProcedure) {
-    throw new Error("No existe el servicio deseado");
+    return "🤔 No encontré ese servicio. Responde con el número de la lista.";
   }
 
   if (
@@ -170,13 +182,7 @@ async function handlerSelectProcedure(
 
   session.datosTemporales.procedureDates = [...procedureDates];
 
-  text += `📅 *Próximas fechas disponibles:*\n\n`;
-
-  procedureDates.forEach((d) => {
-    text += `*${d.idx}.* ${d.fecha}\n`;
-  });
-
-  text += `\n👉 Responde con el número de la fecha.`;
+  text += renderDatesList(procedureDates);
 
   session.estadoActual = BotState.SELECT_DATE;
 
@@ -191,7 +197,7 @@ async function handleSelectDate(
     (b) => b.idx === parseInt(input),
   );
   if (!selectedDate) {
-    throw new Error("La opción no es correcta");
+    return "🤔 Esa opción no es válida. Responde con el número de la fecha.";
   }
 
   session.datosTemporales.selectedDate = { ...selectedDate };
@@ -233,7 +239,7 @@ async function handleSelectTimeSlot(
     (b) => b.idx === parseInt(input),
   );
   if (!selectedTimeSlot) {
-    throw new Error("La opción no es correcta");
+    return "🤔 Esa opción no es válida. Responde con el número del horario.";
   }
 
   session.datosTemporales.selectedTimeSlot = { ...selectedTimeSlot };
@@ -275,9 +281,13 @@ async function handleDataConfirmation(
   }
 
   if (input === "2") {
+    const dates = session.datosTemporales.procedureDates;
+    if (!dates || !dates.length) {
+      session.estadoActual = BotState.INICIO;
+      return "😕 No hay fechas disponibles por ahora.\nEscribe *menú* para volver al inicio.";
+    }
     session.estadoActual = BotState.SELECT_DATE;
-
-    return "🔄 Sin problema. Elige nuevamente la fecha de tu cita.";
+    return `🔄 Sin problema, cambiemos la fecha.\n\n${renderDatesList(dates)}`;
   }
 
   return "🤔 Opción no válida. Responde *1* para confirmar o *2* para cambiar la fecha.";
