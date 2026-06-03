@@ -15,6 +15,13 @@ const appointmentService = new AppointmentService();
 const userService = new UserService();
 const paymentService = new PaymentService();
 
+const formatCOP = (value: number): string =>
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+  }).format(value);
+
 // --- HANDLERS DE CADA ESTADO ---
 
 export const StateHandlers: Record<
@@ -42,21 +49,17 @@ async function handleInicio(
   if (input === "1") {
     let barberos = await barberService.getAllBarbers();
     barberos = barberos.map((b, idx) => ({ ...b, idx: idx + 1 }));
-    let text = `💈 *Nuestros Barberos en MiTurno* 💈\n`;
-    text += `Aquí tienes a nuestro equipo de profesionales disponibles:\n\n`;
+    let text = `💈 *Nuestro equipo* 💈\n\n`;
 
     barberos.forEach((b) => {
-      text += `• ${b.idx} - *${b.nombres} ${b.apellidos}*\n`;
-      text += `   📞 Celular: ${b.celular}\n`;
-      if (b.email) text += `   📧 Email: ${b.email}\n`;
-      text += `\n`;
+      text += `*${b.idx}.* ${b.nombres} ${b.apellidos}\n`;
     });
 
     session.datosTemporales.barberListMapping = barberos;
     session.estadoActual = BotState.SELECT_BARBER;
 
-    text += `👉 Selecciona el número del barbero que deseas`;
-    text += `👉 Escribe *menú* para regresar al inicio.`;
+    text += `\n👉 Responde con el número del barbero.\n`;
+    text += `↩️ Escribe *menú* para volver al inicio.`;
     return text.trim();
   }
 
@@ -74,34 +77,26 @@ async function handleInicio(
 
     session.datosTemporales.proceduresList = [...procedures];
 
-    let mensaje = `💈 *Nuestros Servicios - MiTurno* 💈\n`;
-    mensaje += `Aquí tienes el menú de servicios disponibles que puedes reservar:\n\n`;
+    let mensaje = `✂️ *Nuestros servicios* ✂️\n\n`;
 
     procedures.forEach((serv) => {
       const barberName = serv.barbero
         ? `${serv.barbero.nombres} ${serv.barbero.apellidos}`
         : "Barbero";
 
-      const precioFormateado = new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        minimumFractionDigits: 0,
-      }).format(serv.precio);
-
-      mensaje += `${serv.idx} 🔹 *${serv.nombre}* (por ${barberName})\n`;
+      mensaje += `*${serv.idx}.* ${serv.nombre} — _con ${barberName}_\n`;
       if (serv.descripcion) {
-        mensaje += `   📝 _${serv.descripcion}_\n`;
+        mensaje += `   📝 ${serv.descripcion}\n`;
       }
-      mensaje += `   💵 Precio: ${precioFormateado}\n`;
-      mensaje += `   ⏱️ Duración: ${serv.duracion} minutos\n\n`;
+      mensaje += `   💵 ${formatCOP(serv.precio)}  ·  ⏱️ ${serv.duracion} min\n\n`;
     });
 
-    mensaje += `👉 Escribe el número del servicio que te interesa.`;
+    mensaje += `👉 Responde con el número del servicio.`;
     session.estadoActual = BotState.SELECT_PROCEDURE;
     return mensaje;
   }
 
-  return "👋 Escribe *hola* o *menú* para ver las opciones disponibles de nuestro servicio.";
+  return "👋 ¡Hola! Escribe *menú* para ver lo que podemos hacer por ti.";
 }
 
 async function handlerSelectBarber(
@@ -123,20 +118,16 @@ async function handlerSelectBarber(
 
   session.datosTemporales.proceduresList = barberProcedures;
 
-  let text = "";
-
-  text += `barbero seleccionado ${selectedBarber.nombres} ${selectedBarber.apellidos} \n`;
-
-  text += "Estos son los servicios que ofrece el barbero \n";
+  let text = `✅ Barbero: *${selectedBarber.nombres} ${selectedBarber.apellidos}*\n\n`;
+  text += `✂️ *Servicios disponibles:*\n\n`;
 
   barberProcedures.forEach((b) => {
-    text += `• ${b.idx} - *${b.nombre}*\n`;
-    text += `descripción: - ${b.descripcion}\n`;
-    text += `Precio: ${b.precio}\n`;
-    text += `\n`;
+    text += `*${b.idx}.* ${b.nombre}\n`;
+    if (b.descripcion) text += `   📝 _${b.descripcion}_\n`;
+    text += `   💵 ${formatCOP(b.precio)}\n\n`;
   });
 
-  text += "Selecciona el servicio que deseas\n";
+  text += `👉 Responde con el número del servicio.`;
 
   session.estadoActual = BotState.SELECT_PROCEDURE;
   return text;
@@ -165,32 +156,27 @@ async function handlerSelectProcedure(
 
   session.datosTemporales.procedure = { ...selectedProcedure };
 
-  let text = "";
-
-  text += `Servicio seleccionado: *${selectedProcedure.nombre}*\n`;
-
-  text += "Detalles \n";
-  text += `Descripción: ${selectedProcedure.descripcion}\n`;
-  text += `Precio: ${selectedProcedure.precio}\n`;
-  text += `duracion: ${selectedProcedure.duracion}\n`;
+  let text = `✅ Servicio: *${selectedProcedure.nombre}*\n`;
+  if (selectedProcedure.descripcion)
+    text += `📝 _${selectedProcedure.descripcion}_\n`;
+  text += `💵 ${formatCOP(selectedProcedure.precio)}  ·  ⏱️ ${selectedProcedure.duracion} min\n\n`;
 
   const procedureDates = (await timeSlotService.getDates(selectedProcedure.id))
     .map((p, idx) => ({ ...p, idx: idx + 1 }))
     .slice(0, 6);
 
   if (!procedureDates || !procedureDates.length)
-    return "No hay fechas disponibles para este servicio\n";
+    return "😕 No hay fechas disponibles para este servicio por ahora.\nEscribe *menú* para volver al inicio.";
 
   session.datosTemporales.procedureDates = [...procedureDates];
 
-  text += "Éstas son las próximas fechas disponibles:\n";
+  text += `📅 *Próximas fechas disponibles:*\n\n`;
 
   procedureDates.forEach((d) => {
     text += `*${d.idx}.* ${d.fecha}\n`;
-    text += `\n`;
   });
 
-  text += "Selecciona la fecha deseada\n";
+  text += `\n👉 Responde con el número de la fecha.`;
 
   session.estadoActual = BotState.SELECT_DATE;
 
@@ -210,9 +196,7 @@ async function handleSelectDate(
 
   session.datosTemporales.selectedDate = { ...selectedDate };
 
-  let text = "";
-
-  text += `fecha seleccionada: *${selectedDate.fecha}*\n`;
+  let text = `✅ Fecha: *${selectedDate.fecha}*\n\n`;
 
   const timeSlots = (
     await timeSlotService.getProcedureTimeslotsByDate(
@@ -224,20 +208,17 @@ async function handleSelectDate(
     .slice(0, 11);
 
   if (!timeSlots || !timeSlots.length)
-    return "No hay horarios disponibles para este servicio\n";
+    return "😕 No hay horarios disponibles para esta fecha.\nEscribe *menú* para volver al inicio.";
 
   session.datosTemporales.timeSlotsList = [...timeSlots];
 
-  text += "Estos son los horarios disponibles:\n";
+  text += `🕐 *Horarios disponibles:*\n\n`;
 
   timeSlots.forEach((b) => {
-    text += `*${b.idx}.*\n`;
-    text += `hora inicio: ${b.horaInicio}\n`;
-    text += `hora fin: ${b.horaFin}\n`;
-    text += `\n`;
+    text += `*${b.idx}.* ${b.horaInicio} – ${b.horaFin}\n`;
   });
 
-  text += "Selecciona el horario deseado\n";
+  text += `\n👉 Responde con el número del horario.`;
 
   session.estadoActual = BotState.SELECT_TIME_SLOT;
 
@@ -257,11 +238,12 @@ async function handleSelectTimeSlot(
 
   session.datosTemporales.selectedTimeSlot = { ...selectedTimeSlot };
 
-  let text = "";
+  let text = `📋 *Resumen de tu cita*\n\n`;
+  text += `📅 ${selectedTimeSlot.fecha}\n`;
+  text += `🕐 ${selectedTimeSlot.horaInicio} – ${selectedTimeSlot.horaFin}\n\n`;
+  text += `¿Confirmas tu reserva?\n`;
+  text += `✅ *1* Confirmar     🔄 *2* Elegir otra fecha`;
 
-  text += `horario y fecha seleccionados para el servicio: *${selectedTimeSlot.fecha}: ${selectedTimeSlot.horaInicio} -> ${selectedTimeSlot.horaFin}*\n`;
-
-  text += "¿Confirmas los datos? oprime *1*, 2 para horarios";
   session.estadoActual = BotState.DATA_CONFIRMATION;
 
   return text;
@@ -284,10 +266,10 @@ async function handleDataConfirmation(
       precio: appointmentData.precio,
     });
 
-    let message =
-      "Recuerda que debes abonar un 50% para completar el agendamiento\n";
-
-    message += `-> link de pago: ${paymentLink}\n`;
+    let message = `🎉 *¡Cita agendada!*\n\n`;
+    message += `Para confirmarla, abona el *50%* con este enlace:\n`;
+    message += `💳 ${paymentLink}\n\n`;
+    message += `¡Gracias por reservar en *MiTurno*! 💈`;
 
     return message;
   }
@@ -295,10 +277,10 @@ async function handleDataConfirmation(
   if (input === "2") {
     session.estadoActual = BotState.SELECT_DATE;
 
-    return "Select date\n";
+    return "🔄 Sin problema. Elige nuevamente la fecha de tu cita.";
   }
 
-  return "";
+  return "🤔 Opción no válida. Responde *1* para confirmar o *2* para cambiar la fecha.";
 }
 
 export const FAQ: Record<string, string> = {

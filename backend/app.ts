@@ -29,7 +29,6 @@ async function startWhatsappLocal(): Promise<void> {
 
     const phoneRequest = contact.id._serialized;
     const userName = contact.name;
-    //se puede sacar el nombre y otra info para crear el usuario al principio
 
     const entry: WebhookEntry = {
       changes: [

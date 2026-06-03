@@ -25,12 +25,15 @@ export class UserService {
   }) {
     console.log("Creating User ", JSON.stringify(clientParams));
 
-    const user = await Cliente.create({
-      nombres: clientParams.names,
-      apellidos: clientParams.lastnames,
-      email: clientParams.email,
-      celular: clientParams.phone,
-    });
+    const user = await Cliente.create(
+      {
+        nombres: clientParams.names,
+        apellidos: clientParams.lastnames,
+        email: clientParams.email,
+        celular: clientParams.phone,
+      },
+      { raw: true },
+    );
     return user;
   }
 
