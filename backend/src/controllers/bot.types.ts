@@ -41,6 +41,7 @@ export interface UserSession {
 export interface WebhookMessage {
   from: string;
   type: string;
+  userName?: string;
   text?: { body: string };
   interactive?: {
     list_reply?: { id: string };
