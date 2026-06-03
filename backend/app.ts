@@ -8,7 +8,6 @@ import { connectRedis } from "./src/config/redis";
 export { app };
 
 async function startWhatsappLocal(): Promise<void> {
-  if (env.nodeEnv !== "development" || !env.enableWhatsappLocal) return;
   const client = await (whatsappService as any).initClient();
   console.log("✅ WhatsApp conectado");
   client.on("ready", () => {
@@ -25,12 +24,12 @@ async function startWhatsappLocal(): Promise<void> {
     )
       return;
 
-    console.log("pasa", msg.body);
-    console.log("getContact");
-
     const contact = await msg.getContact();
+    console.log("contact", JSON.stringify(contact));
+
     const phoneRequest = contact.id._serialized;
-    //se puede sacar el nombre y otra info para crear el usuario al principio
+    const userName = contact.name;
+
     const entry: WebhookEntry = {
       changes: [
         {
@@ -38,7 +37,7 @@ async function startWhatsappLocal(): Promise<void> {
             messages: [
               {
                 from: phoneRequest.replace("@c.us", ""),
-                // from: msg.from.replace("@c.us", ""),
+                userName: userName || null,
                 type: "text",
                 text: { body: msg.body },
               },

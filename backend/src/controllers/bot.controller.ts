@@ -8,6 +8,9 @@ export {
 } from "./bot.types";
 import { StateHandlers, FAQ } from "./bot.handlers";
 import { getOrCreateSession, saveSession } from "../services/session.service";
+import { UserService } from "../services/user.service";
+
+const userService = new UserService();
 
 export async function handleMessage(entry: WebhookEntry): Promise<void> {
   console.log("handleMessage", JSON.stringify(entry));
@@ -17,9 +20,16 @@ export async function handleMessage(entry: WebhookEntry): Promise<void> {
   if (!message) return;
 
   const from = message.from;
+  const userName = message.userName;
 
   // 1. Obtener o inicializar la sesión del usuario (Redis)
   const session = await getOrCreateSession(from);
+
+  if (!session.datosTemporales.user) {
+    const client = await userService.getOrCreateUser(from, userName);
+    session.datosTemporales.user = client;
+    await saveSession(session);
+  }
 
   // 2. Procesar respuesta de lista interactiva (Meta API)
   if (message.type === "interactive") {

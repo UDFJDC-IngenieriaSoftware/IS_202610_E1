@@ -9,6 +9,12 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      # Conexión a la base de datos interna del compose (servicio "database")
+      - DB_HOST=database
+      - DB_PORT=5432
+      - POSTGRES_DB=bot_db_prod
+      - POSTGRES_USER=postgres_prod
+      - POSTGRES_PASSWORD=password_seguro_produccion_cambiame
       # En producción, Puppeteer también usa el Chromium instalado en el contenedor
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
