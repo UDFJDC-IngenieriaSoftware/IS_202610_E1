@@ -16,6 +16,9 @@ import { defineConfig, devices } from '@playwright/test'
  *   npx playwright test tests/e2e/panel/   # solo tests del panel
  */
 export default defineConfig({
+  globalSetup:    './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
+
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

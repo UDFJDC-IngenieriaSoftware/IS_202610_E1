@@ -47,6 +47,11 @@ Thumbs.db
 .wwebjs_auth/
 .wwebjs_cache/
 
+# Playwright
+playwright/.auth/
+test-results/
+playwright-report/
+
 # Binaries / installers
 *.deb
 *.rpm
