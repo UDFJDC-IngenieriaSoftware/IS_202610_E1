@@ -29,7 +29,7 @@ export interface FormValidationResult<T> {
 
 export function useFormValidation<T extends Record<string, any>>(
   schema: ZodSchema,
-  onSubmit: (data: T) => Promise<void> | void,
+  _onSubmit?: (data: T) => Promise<void> | void,
   initialValues?: T,
 ): FormValidationResult<T> {
   const [values, setValues] = useState<T>(initialValues || ({} as T))
@@ -69,13 +69,13 @@ export function useFormValidation<T extends Record<string, any>>(
     setErrors({})
 
     try {
-      const validated = schema.parse(values)
+      const validated = schema.parse(values) as T
       await callback(validated)
     } catch (error: any) {
       if (error?.issues) {
         const newErrors: Partial<Record<keyof T, string>> = {}
         error.issues.forEach((issue: any) => {
-          const field = issue.path[0]
+          const field = issue.path[0] as keyof T
           newErrors[field] = issue.message
         })
         setErrors(newErrors)

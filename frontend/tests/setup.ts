@@ -1,6 +1,15 @@
 import { expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+// Disable mocks in tests (use real API client for testing)
+Object.defineProperty(import.meta, 'env', {
+  value: {
+    ...import.meta.env,
+    VITE_USE_MOCKS: 'false',
+  },
+  writable: true,
+})
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
