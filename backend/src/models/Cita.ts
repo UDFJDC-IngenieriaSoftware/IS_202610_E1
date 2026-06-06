@@ -7,13 +7,15 @@ export interface CitaAttributes {
   precio: number;
   idHorario: string;
   idCliente: string;
+  reminder24hSent: boolean;
+  reminder2hSent: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface CitaCreationAttributes extends Optional<
   CitaAttributes,
-  "id" | "estado"
+  "id" | "estado" | "reminder24hSent" | "reminder2hSent"
 > {}
 
 class Cita
@@ -25,6 +27,8 @@ class Cita
   declare public precio: number;
   declare public idHorario: string;
   declare public idCliente: string;
+  declare public reminder24hSent: boolean;
+  declare public reminder2hSent: boolean;
 
   declare public readonly createdAt: Date;
   declare public readonly updatedAt: Date;
@@ -60,6 +64,18 @@ Cita.init(
       type: DataTypes.UUID,
       allowNull: false,
       field: "id_cliente",
+    },
+    reminder24hSent: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "reminder_24h_sent",
+    },
+    reminder2hSent: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "reminder_2h_sent",
     },
   },
   {

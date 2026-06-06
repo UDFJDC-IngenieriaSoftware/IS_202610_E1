@@ -79,11 +79,4 @@ export function createApp(): express.Express {
   return app;
 }
 
-const app = createApp();
-
-const PORT = process.env.PORT ?? 3000;
-app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-});
-
-export default app;
+export default createApp();
