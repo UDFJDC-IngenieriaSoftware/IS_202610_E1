@@ -84,22 +84,23 @@ test.describe('CU-09 · Historial y estadísticas', () => {
     const grupoEstado = page.locator('[role="group"][aria-label="Filtrar por estado"]')
     await grupoEstado.locator('button', { hasText: 'Canceladas' }).click()
 
-    // Esperar actualización
     await page.waitForTimeout(300)
 
     const tbody = page.locator('table[aria-label="Historial de citas"] tbody tr')
     const count = await tbody.count()
 
-    if (count === 1) {
-      // Posible mensaje "No hay citas con los filtros aplicados."
-      const celda = tbody.first().locator('td')
-      const text = await celda.textContent()
-      if (text?.includes('No hay citas')) return // FA-01 ok
-    }
+    if (count === 0) return // sin canceladas en este entorno — ok
 
-    // Si hay filas reales, todas deben tener el status pill de cancelada
+    // Fila de mensaje vacío: contiene td con "No hay citas"
+    const textoFila = await tbody.first().textContent()
+    if (textoFila?.includes('No hay citas')) return
+
+    // StatusPill → Pill → <span class="pill">…</span>
+    // El texto del pill está en el span directo dentro del td de estado (último de la fila antes de chevron)
     for (let i = 0; i < Math.min(count, 5); i++) {
-      await expect(tbody.nth(i).locator('.status-pill, [class*="status"]')).toContainText(/[Cc]ancel/)
+      // La fila tiene: fecha, hora, cliente, servicio, precio, StatusPill, chevron
+      // StatusPill renderiza <span class="pill"> con texto "Cancelada"
+      await expect(tbody.nth(i).locator('span.pill')).toContainText(/[Cc]ancel/)
     }
   })
 

@@ -107,28 +107,53 @@ test.describe('CU-08 · Agenda', () => {
     await expect(subtitle).toHaveText(textoHoy ?? '', { timeout: 3_000 })
   })
 
+  // ── FA-01: grilla vacía ──────────────────────────────────────────────────
+
+  test('FA-01 · semana sin citas muestra grilla vacía sin errores ni crashes', async ({ page }) => {
+    // La semana actual no tiene citas (el seed las pone en jun-23).
+    // La grilla debe renderizar sin errores y sin eventos.
+    await expect(page.locator('div.cal-grid')).toBeVisible()
+    await expect(page.locator('button.cal-event')).toHaveCount(0, { timeout: 5_000 })
+    // Nota: AgendaPage no muestra un mensaje "No tienes citas para este período"
+    // (FA-01 del plan parcialmente cubierto — grilla vacía sin error, sin mensaje explícito)
+  })
+
   // ── Detalle de cita ──────────────────────────────────────────────────────
 
-  test('abre modal de detalle al clicar en un evento (si hay citas)', async ({ page }) => {
-    const eventos = page.locator('button.cal-event')
-    const cantidad = await eventos.count()
-
-    if (cantidad === 0) {
-      // No hay citas en la semana actual → navegar varias semanas hasta encontrar
-      // Si el seed no tiene citas recientes, el test se omite para no ser frágil
-      test.skip()
-      return
+  test('abre modal de detalle al clicar en un evento', async ({ page }) => {
+    // La cita del seed está en 2026-06-23. El frontend usa VITE_TODAY ('hoy' del calendario)
+    // que puede diferir de la fecha real, por lo que navegamos semana a semana hasta encontrar
+    // la cita (máx 12 semanas) en lugar de hardcodear un número de clicks.
+    const MAX_SEMANAS = 12
+    for (let i = 0; i < MAX_SEMANAS; i++) {
+      if (await page.locator('button.cal-event').count() > 0) break
+      const subtitleAntes = await page.locator('.topbar-sub').textContent()
+      await page.locator('button[aria-label="Semana siguiente"]').click()
+      await expect(page.locator('.topbar-sub')).not.toHaveText(subtitleAntes ?? '', { timeout: 3_000 })
     }
+
+    const eventos = page.locator('button.cal-event')
+    if (await eventos.count() === 0) { test.skip(); return }
+    await expect(eventos.first()).toBeVisible({ timeout: 3_000 })
 
     await eventos.first().click()
     await expect(page.getByRole('dialog', { name: 'Detalle de cita' })).toBeVisible({ timeout: 3_000 })
 
     // El modal muestra hora, estado y servicio
     await expect(page.locator('.cd-hora')).toBeVisible()
-    await expect(page.locator('.cd-section')).toBeVisible()
+    await expect(page.locator('.cd-section').first()).toBeVisible()
 
     // Cerrar modal
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2_000 })
+  })
+
+  // ── Gaps documentados ────────────────────────────────────────────────────
+  // eslint-disable-next-line playwright/no-skipped-test
+  test.skip('CU-08 · vista "Día" — no implementada en AgendaPage', () => {
+    // AgendaPage define type VistaAgenda = \'semana\' | \'mes\'.
+    // No existe botón "Día" ni lógica de vista diaria.
+    // El toggle solo muestra Semana / Mes.
+    // Pendiente según CU-08 paso 3 del plan de verificación.
   })
 })
