@@ -7,11 +7,19 @@ import * as payment from "../controllers/payment.controller";
 import * as customers from "../controllers/customer.controller";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler } from "../utils/http";
+import { validate } from "../middleware/validation";
+import {
+  authSchemas,
+  bookingSchemas,
+  serviceSchemas,
+  paymentSchemas,
+  customerSchemas,
+} from "../utils/validators";
 
 function authRoutes(): Router {
   const router = Router();
-  router.post("/register", asyncHandler(auth.register));
-  router.post("/login", asyncHandler(auth.login));
+  router.post("/register", validate(authSchemas.register), asyncHandler(auth.register));
+  router.post("/login", validate(authSchemas.login), asyncHandler(auth.login));
   router.post("/logout", asyncHandler(auth.logout));
   router.post("/refresh", requireAuth, asyncHandler(auth.refresh));
   router.get("/me", requireAuth, asyncHandler(auth.me));
@@ -25,9 +33,9 @@ function serviceRoutes(): Router {
   router.use(requireAuth);
   router.get("/", asyncHandler(services.listServices));
   router.get("/:id", asyncHandler(services.getService));
-  router.post("/", asyncHandler(services.createService));
-  router.put("/:id", asyncHandler(services.updateService));
-  router.patch("/:id", asyncHandler(services.updateService));
+  router.post("/", validate(serviceSchemas.create), asyncHandler(services.createService));
+  router.put("/:id", validate(serviceSchemas.update), asyncHandler(services.updateService));
+  router.patch("/:id", validate(serviceSchemas.update), asyncHandler(services.updateService));
   router.delete("/:id", asyncHandler(services.deleteService));
   router.patch("/:id/toggle", asyncHandler(services.toggleService));
   return router;
@@ -56,11 +64,12 @@ function bookingRoutes(): Router {
   const router = Router();
   router.post("/availability", asyncHandler(booking.getAvailability));
   router.post("/disponibilidad", asyncHandler(booking.getAvailability));
+  //router.post("/", validate(bookingSchemas.create), asyncHandler(booking.createBooking));
   // router.post("/", asyncHandler(booking.createBooking));
   router.get("/", requireAuth, asyncHandler(booking.listBookings));
   router.get("/stats", requireAuth, asyncHandler(booking.bookingStats));
   router.get("/:id", requireAuth, asyncHandler(booking.getBooking));
-  router.patch("/:id", requireAuth, asyncHandler(booking.updateBooking));
+  router.patch("/:id", requireAuth, validate(bookingSchemas.update), asyncHandler(booking.updateBooking));
   router.put("/:id/cancel", requireAuth, (req, _res, next) => {
     req.params.action = "cancel";
     next();
@@ -75,7 +84,16 @@ function bookingRoutes(): Router {
   }, asyncHandler(booking.transitionBooking));
   return router;
 }
-
+/*
+function paymentRoutes(): Router {
+  const router = Router();
+  router.use(requireAuth);
+  router.get("/:bookingId", asyncHandler(payment.getPayment));
+  router.post("/link", validate(paymentSchemas.create), asyncHandler(payment.createPaymentLink));
+  router.post("/:paymentId/refund", asyncHandler(payment.refundPayment));
+  return router;
+}
+*/
 // function paymentRoutes(): Router {
 //   const router = Router();
 //   router.use(requireAuth);
@@ -89,7 +107,7 @@ function customerRoutes(): Router {
   router.use(requireAuth);
   router.get("/", asyncHandler(customers.listCustomers));
   router.get("/:id", asyncHandler(customers.getCustomer));
-  router.patch("/:id", asyncHandler(customers.updateCustomer));
+  router.patch("/:id", validate(customerSchemas.update), asyncHandler(customers.updateCustomer));
   return router;
 }
 

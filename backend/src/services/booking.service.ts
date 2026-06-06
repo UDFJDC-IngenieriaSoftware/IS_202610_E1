@@ -1,7 +1,9 @@
 import { Transaction } from "sequelize";
-import { sequelize, Cita, Cliente, Horario, Pago, Servicio } from "../models";
+import { sequelize, Cita, Cliente, Horario, Pago, Servicio, Barbero } from "../models";
 import { HttpError } from "../utils/http";
 import { AvailabilityService, fromMinutes } from "./availability.service";
+import { notificationService } from "./notification.service";
+import logger from "../utils/logger";
 
 export interface CreateBookingInput {
   idServicio: string;
@@ -174,6 +176,33 @@ export class BookingService {
     await booking.update({ estado });
     if (estado === "cancelada") {
       await Horario.update({ estado: "disponible" }, { where: { id: booking.idHorario } });
+
+      // Send cancellation notification
+      try {
+        const cliente = await Cliente.findByPk(booking.idCliente);
+        const horario = (await Horario.findByPk(booking.idHorario, {
+          include: [{ model: Servicio, as: "servicio", required: false }],
+        })) as any;
+
+        if (cliente && horario && horario.servicio) {
+          const barbero = await Barbero.findByPk(horario.servicio.idBarbero);
+          const barberName = barbero
+            ? `${barbero.nombres} ${barbero.apellidos}`.trim()
+            : "Barbero";
+
+          const dateTime = `${horario.fecha} ${horario.horaInicio.slice(0, 5)}`;
+          await notificationService.sendCancellation({
+            customerName: `${cliente.nombres} ${cliente.apellidos}`.trim(),
+            customerPhone: cliente.celular,
+            barberName,
+            serviceName: horario.servicio.nombre,
+            dateTime,
+            bookingId: booking.id as any,
+          });
+        }
+      } catch (error) {
+        logger.error("Error sending cancellation notification", { error: String(error) });
+      }
     }
     return this.getOwned(id, idBarbero);
   }

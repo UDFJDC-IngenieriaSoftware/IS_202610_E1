@@ -8,12 +8,16 @@ export interface PagoAttributes {
   referencia: string | null;
   paymentLinkId?: string | null;
   transactionId?: string | null;
+  refundStatus?: string | null;
+  refundTransactionId?: string | null;
+  refundReason?: string | null;
+  refundedAt?: Date | null;
   idCita: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface PagoCreationAttributes extends Optional<PagoAttributes, "id" | "estado" | "referencia" | "paymentLinkId" | "transactionId"> {}
+export interface PagoCreationAttributes extends Optional<PagoAttributes, "id" | "estado" | "referencia" | "paymentLinkId" | "transactionId" | "refundStatus" | "refundTransactionId" | "refundReason" | "refundedAt"> {}
 
 class Pago extends Model<PagoAttributes, PagoCreationAttributes> implements PagoAttributes {
   declare public id: string;
@@ -22,6 +26,10 @@ class Pago extends Model<PagoAttributes, PagoCreationAttributes> implements Pago
   declare public referencia: string | null;
   declare public paymentLinkId: string | null;
   declare public transactionId: string | null;
+  declare public refundStatus: string | null;
+  declare public refundTransactionId: string | null;
+  declare public refundReason: string | null;
+  declare public refundedAt: Date | null;
   declare public idCita: string;
 
   declare public readonly createdAt: Date;
@@ -62,6 +70,26 @@ Pago.init(
       type: DataTypes.STRING,
       allowNull: true,
       field: "transaction_id",
+    },
+    refundStatus: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "refund_status",
+    },
+    refundTransactionId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "refund_transaction_id",
+    },
+    refundReason: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "refund_reason",
+    },
+    refundedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "refunded_at",
     },
     idCita: {
       type: DataTypes.UUID,

@@ -1,9 +1,11 @@
 import axios from "axios";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { env } from "../config/env";
-import { Cita, Pago, Cliente, Horario } from "../models";
+import { Cita, Pago, Cliente, Horario, Servicio, Barbero } from "../models";
 import { HttpError } from "../utils/http";
 import whatsappService from "../whatsapp.factory";
+import { notificationService } from "./notification.service";
+import logger from "../utils/logger";
 
 interface WompiLinkResponse {
   data: { id: string };
@@ -107,8 +109,58 @@ export class PaymentService {
       await payment.update({ paymentLinkId: linkId });
       return `https://checkout.wompi.co/l/${linkId}`;
     } catch (error) {
-      console.error("Wompi payment link error:", error);
+      logger.error("Wompi payment link error", { error: String(error) });
       throw new HttpError(502, "No fue posible generar el enlace de pago");
+    }
+  }
+
+  async refundPayment(paymentId: string, reason: string = "customer_request"): Promise<void> {
+    if (!env.wompiPrivateKey) {
+      throw new HttpError(503, "Servicio de reembolsos no configurado");
+    }
+
+    const payment = await Pago.findByPk(paymentId);
+    if (!payment) {
+      throw new HttpError(404, "Pago no encontrado");
+    }
+
+    if (payment.estado !== "exitoso") {
+      throw new HttpError(409, "Solo se pueden reembolsar pagos exitosos");
+    }
+
+    if (!payment.transactionId) {
+      throw new HttpError(409, "No se puede reembolsar: transacción no identificada");
+    }
+
+    const cita = await Cita.findByPk(payment.idCita);
+    if (!cita) {
+      throw new HttpError(404, "Cita no encontrada");
+    }
+
+    // Check if booking is within 24 hours
+    const bookingDate = new Date(`${cita.idHorario}`);
+    const now = new Date();
+    const hoursDiff = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursDiff < 24) {
+      throw new HttpError(409, "No se pueden reembolsar pagos menos de 24 horas antes de la cita");
+    }
+
+    try {
+      await axios.post(
+        `${env.wompiApiUrl}/transactions/${payment.transactionId}/refunds`,
+        {
+          amount_in_cents: Math.round(payment.monto * 100),
+          reason,
+        },
+        { headers: { Authorization: `Bearer ${env.wompiPrivateKey}` } },
+      );
+
+      await payment.update({ estado: "reembolsado" });
+      logger.info(`Payment refunded successfully`, { paymentId, transactionId: payment.transactionId });
+    } catch (error) {
+      logger.error("Wompi refund error", { error: String(error), paymentId });
+      throw new HttpError(502, "No fue posible procesar el reembolso");
     }
   }
 
@@ -183,18 +235,51 @@ export class PaymentService {
     const estado = paymentStatus[transaction.status] || "pendiente";
     await payment.update({ estado, transactionId: transaction.id });
 
-    const cita = await Cita.findByPk(payment.idCita);
+    const cita = (await Cita.findByPk(payment.idCita, {
+      include: [
+        { model: Cliente, as: "cliente", required: false },
+        {
+          model: Horario,
+          as: "horario",
+          required: false,
+          include: [{ model: Servicio, as: "servicio", required: false }],
+        },
+      ],
+    })) as any;
+
     if (cita) {
       const cliente = await Cliente.findByPk(cita.idCliente);
       if (cliente) {
         if (estado === "exitoso") {
           await cita.update({ estado: "confirmada" });
-          await whatsappService
-            .sendText(
-              cliente.celular,
-              `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`,
-            )
-            .catch(console.error);
+
+          // Send confirmation notification
+          try {
+            if (cita.horario && cita.horario.servicio) {
+              const barbero = await Barbero.findByPk(cita.horario.servicio.idBarbero);
+              const barberName = barbero
+                ? `${barbero.nombres} ${barbero.apellidos}`.trim()
+                : "Barbero";
+
+              const dateTime = `${cita.horario.fecha} ${cita.horario.horaInicio.slice(0, 5)}`;
+              await notificationService.sendBookingConfirmation({
+                customerName: `${cliente.nombres} ${cliente.apellidos}`.trim(),
+                customerPhone: cliente.celular,
+                barberName,
+                serviceName: cita.horario.servicio.nombre,
+                dateTime,
+                bookingId: cita.id as any,
+              });
+            }
+          } catch (error) {
+            logger.error("Error sending booking confirmation", { error: String(error) });
+          }
+
+          // Keep legacy WhatsApp notification for backwards compatibility
+          await whatsappService.sendText(
+            cliente.celular,
+            `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
+          ).catch(logger.error);
         } else if (estado === "fallido") {
           await cita.update({ estado: "cancelada" });
           await Horario.update(
