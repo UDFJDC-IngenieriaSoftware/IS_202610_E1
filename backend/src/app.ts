@@ -10,6 +10,7 @@ import { correlationIdMiddleware } from "./middleware/correlation-id";
 import { createApiRouter, createVersionedRouter } from "./routes";
 import logger from "./utils/logger";
 import { reminderJob } from "./jobs/reminder.job";
+import { paymentTimeoutJob } from "./jobs/payment-timeout.job";
 import { sequelize } from "./models";
 
 export function createApp(): express.Express {
@@ -17,8 +18,9 @@ export function createApp(): express.Express {
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
 
-  // Start reminder job
+  // Start background jobs
   reminderJob.start(sequelize);
+  paymentTimeoutJob.start();
 
   app.use(correlationIdMiddleware);
   app.use(apiHeaders);
