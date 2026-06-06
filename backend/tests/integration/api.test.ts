@@ -42,8 +42,8 @@ describe('API Integration Tests', () => {
   })
 
   describe('Rate Limiting', () => {
-    it('should include rate limit headers', async () => {
-      const response = await request(app).get('/')
+    it('should include rate limit headers on API endpoints', async () => {
+      const response = await request(app).get('/api')
       expect(response.headers['ratelimit-limit']).toBeDefined()
       expect(response.headers['ratelimit-remaining']).toBeDefined()
     })

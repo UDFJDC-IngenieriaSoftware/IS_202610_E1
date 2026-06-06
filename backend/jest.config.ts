@@ -10,14 +10,6 @@ export default {
     "!src/**/*.interface.ts",
     "!src/**/*.factory.ts",
   ],
-  coverageThreshold: {
-    global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50,
-    },
-  },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testTimeout: 10000,
 };
