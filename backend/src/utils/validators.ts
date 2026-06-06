@@ -4,8 +4,28 @@ export const authSchemas = {
   register: z.object({
     email: z.string().email("Email inválido"),
     password: z.string().min(6, "Contraseña debe tener mínimo 6 caracteres"),
-    name: z.string().min(2, "Nombre debe tener mínimo 2 caracteres"),
-  }),
+    // Spanish names (primary)
+    nombres: z.string().min(2).optional(),
+    apellidos: z.string().min(2).optional(),
+    celular: z.string().min(7).optional(),
+    barberia: z.string().optional(),
+    ciudad: z.string().optional(),
+    direccion: z.string().optional(),
+    plan: z.enum(["solo", "pro", "estudio"]).optional(),
+    // English aliases
+    name: z.string().min(2).optional(),
+    whatsapp: z.string().min(7).optional(),
+    nombreBarberia: z.string().optional(),
+    // Nested barbershop object
+    barbershop: z.object({
+      name: z.string().optional(),
+      city: z.string().optional(),
+      address: z.string().optional(),
+    }).optional(),
+  }).refine(
+    (d) => d.nombres !== undefined || d.name !== undefined,
+    { message: "nombres es requerido" }
+  ),
   login: z.object({
     email: z.string().email("Email inválido"),
     password: z.string().min(1, "Contraseña requerida"),
@@ -21,8 +41,7 @@ export const bookingSchemas = {
     customerPhone: z.string().regex(/^\+?\d{10,}$/, "Teléfono inválido"),
   }),
   update: z.object({
-    date: z.string().date().optional(),
-    time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    estado: z.enum(["confirmada", "cancelada", "completada", "no-show", "bloqueado", "pendiente"]).optional(),
     status: z.enum(["confirmed", "cancelled", "completed"]).optional(),
   }),
 };
@@ -42,12 +61,33 @@ export const scheduleSchemas = {
 
 export const serviceSchemas = {
   create: z.object({
-    name: z.string().min(2, "Nombre debe tener mínimo 2 caracteres"),
+    nombre: z.string().min(2, "Nombre debe tener mínimo 2 caracteres"),
+    descripcion: z.string().optional(),
+    duracion: z.number().int().positive("Duración debe ser positiva"),
+    precio: z.number().nonnegative("Precio no puede ser negativo"),
+    activo: z.boolean().optional(),
+    // English aliases kept for API versioned router
+    name: z.string().min(2).optional(),
     description: z.string().optional(),
-    duration: z.number().int().positive("Duración debe ser positiva"),
-    price: z.number().nonnegative("Precio no puede ser negativo"),
-  }),
+    duration: z.number().int().positive().optional(),
+    price: z.number().nonnegative().optional(),
+  }).refine(
+    (d) => d.nombre !== undefined || d.name !== undefined,
+    { message: "nombre es requerido" }
+  ).refine(
+    (d) => d.duracion !== undefined || d.duration !== undefined,
+    { message: "duracion es requerida" }
+  ).refine(
+    (d) => d.precio !== undefined || d.price !== undefined,
+    { message: "precio es requerido" }
+  ),
   update: z.object({
+    nombre: z.string().min(2).optional(),
+    descripcion: z.string().optional(),
+    duracion: z.number().int().positive().optional(),
+    precio: z.number().nonnegative().optional(),
+    activo: z.boolean().optional(),
+    // English aliases kept for API versioned router
     name: z.string().min(2).optional(),
     description: z.string().optional(),
     duration: z.number().int().positive().optional(),

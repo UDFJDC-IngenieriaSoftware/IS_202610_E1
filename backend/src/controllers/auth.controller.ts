@@ -29,14 +29,14 @@ function authResponse(user: Barbero, token: string) {
 
 export async function register(req: Request, res: Response): Promise<void> {
   const body = req.body || {};
-  const shop = body.barbershop || body.barberia || {};
+  const shop = (typeof body.barbershop === "object" ? body.barbershop : null) || {};
   const user = await authService.register({
     nombres: requiredString(body.nombres ?? body.name ?? body.nombre, "nombres", 2),
     apellidos: requiredString(body.apellidos ?? body.apellido ?? "Propietario", "apellidos", 2),
     email: emailString(body.email),
     celular: requiredString(body.celular ?? body.phone ?? body.whatsapp, "celular", 7),
     password: requiredString(body.password, "password", 8),
-    barberia: optionalString(shop.name ?? shop.nombre ?? body.nombreBarberia),
+    barberia: optionalString(shop.name ?? shop.nombre ?? body.nombreBarberia ?? (typeof body.barberia === "string" ? body.barberia : undefined)),
     ciudad: optionalString(shop.city ?? shop.ciudad ?? body.ciudad),
     direccion: optionalString(shop.address ?? shop.direccion ?? body.direccion),
     plan: ["solo", "pro", "estudio"].includes(body.plan) ? body.plan : undefined,
