@@ -6,6 +6,7 @@ import {
   notFound,
   rateLimit,
 } from "./middleware/api";
+import { correlationIdMiddleware } from "./middleware/correlation-id";
 import { createApiRouter, createVersionedRouter } from "./routes";
 import logger from "./utils/logger";
 import { reminderJob } from "./jobs/reminder.job";
@@ -78,4 +79,11 @@ export function createApp(): express.Express {
   return app;
 }
 
-export default createApp();
+const app = createApp();
+
+const PORT = process.env.PORT ?? 3000;
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+});
+
+export default app;
