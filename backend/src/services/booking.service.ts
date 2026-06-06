@@ -165,6 +165,67 @@ export class BookingService {
     );
   }
 
+  async listForCliente(celular: string): Promise<Cita[]> {
+    const { Op } = await import("sequelize");
+    const cliente = await Cliente.findOne({ where: { celular } });
+    if (!cliente) return [];
+    return Cita.findAll({
+      where: { idCliente: cliente.id, estado: { [Op.in]: ["confirmada", "pendiente"] } },
+      include: [
+        {
+          model: Horario,
+          as: "horario",
+          required: true,
+          include: [{ model: Servicio, as: "servicio", required: true }],
+        },
+      ],
+      order: [[{ model: Horario, as: "horario" }, "fecha", "ASC"]],
+    });
+  }
+
+  async reschedule(citaId: string, newFecha: string, newHora: string): Promise<Cita> {
+    return sequelize.transaction(
+      { isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE },
+      async (t) => {
+        const booking = (await Cita.findByPk(citaId, {
+          include: [
+            {
+              model: Horario,
+              as: "horario",
+              required: true,
+              include: [{ model: Servicio, as: "servicio", required: true }],
+            },
+          ],
+          transaction: t,
+        })) as any;
+        if (!booking) throw new HttpError(404, "Cita no encontrada");
+
+        const service: Servicio = booking.horario.servicio;
+        const available = await this.availability.isSlotAvailable(service, newFecha, newHora, t);
+        if (!available) throw new HttpError(409, "El horario ya no está disponible");
+
+        await Horario.update(
+          { estado: "disponible" },
+          { where: { id: booking.idHorario }, transaction: t },
+        );
+
+        const newSlot = await Horario.create(
+          {
+            fecha: newFecha,
+            horaInicio: `${newHora}:00`,
+            horaFin: `${fromMinutes(minutes(newHora) + service.duracion)}:00`,
+            estado: "reservado",
+            idServicio: service.id,
+          },
+          { transaction: t },
+        );
+
+        await booking.update({ idHorario: newSlot.id }, { transaction: t });
+        return booking;
+      },
+    );
+  }
+
   async updateStatus(id: string, idBarbero: string, estado: string): Promise<Cita> {
     if (!["pendiente", "confirmada", "cancelada", "completada", "no-show"].includes(estado)) {
       throw new HttpError(400, "Estado de cita invalido");

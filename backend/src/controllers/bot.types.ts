@@ -5,6 +5,11 @@ export enum BotState {
   SELECT_DATE = "SELECT_DATE",
   SELECT_TIME_SLOT = "SELECT_TIME_SLOT",
   DATA_CONFIRMATION = "DATA_CONFIRMATION",
+  // CU-05: Cancelar / reprogramar
+  LIST_CITAS = "LIST_CITAS",
+  CANCEL_CONFIRM = "CANCEL_CONFIRM",
+  RESCHEDULE_DATE = "RESCHEDULE_DATE",
+  RESCHEDULE_TIME = "RESCHEDULE_TIME",
 }
 
 export interface UserSession {
@@ -35,6 +40,9 @@ export interface UserSession {
     selectedDate?: any;
     timeSlotsList?: any[];
     selectedTimeSlot?: any;
+    // CU-05: Cancelar / reprogramar
+    citasActivas?: any[];
+    selectedCita?: any;
   };
 }
 

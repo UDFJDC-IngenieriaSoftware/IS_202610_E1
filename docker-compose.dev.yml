@@ -36,6 +36,28 @@ services:
     ports:
       - "6379:6379" # Permite conexión desde el host (ej. redis-cli, RedisInsight)
 
+  # ─── FRONTEND SERVICE (Vite Dev Server - Dev Override) ──────────────────
+  frontend:
+    image: node:20-slim
+    container_name: mi_turno_frontend
+    restart: unless-stopped
+    working_dir: /app
+    # Instala pnpm + arranca el servidor de Vite accesible desde la red del compose
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm dev --host 0.0.0.0"
+    environment:
+      - VITE_API_URL=/api
+      - VITE_USE_MOCKS=false
+    volumes:
+      - ./frontend:/app                # live-reload del código fuente
+      - /app/node_modules              # preserva node_modules del contenedor
+    ports:
+      - "5173:5173"                   # acceso directo al dev server si se desea
+
+  # ─── NGINX SERVICE (Dev Override — apunta al Vite dev server) ───────────
+  nginx:
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+
   # ─── PGADMIN SERVICE (PostgreSQL GUI - Dev Only) ────────────────────────
   pgadmin:
     image: dpage/pgadmin4:latest

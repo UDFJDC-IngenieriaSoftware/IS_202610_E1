@@ -1,4 +1,5 @@
 import Servicio from "../models/Servicio";
+import logger from "../utils/logger";
 
 export class ProcedureService {
   constructor(private procedureModel: Servicio) {}
@@ -53,16 +54,18 @@ export class ProcedureService {
     });
   }
 
-  async getServicesMenuText(): Promise<any> {
-    const procedures = await Servicio.findAll({
-      include: [{ association: "barbero", where: { activo: true } }],
-      raw: true,
-      nest: true,
-    });
-
-    console.log("getServicesMenuText", JSON.stringify(procedures[0]));
-
-    return procedures;
+  async getServicesMenuText(): Promise<any[]> {
+    try {
+      const procedures = await Servicio.findAll({
+        include: [{ association: "barbero", where: { activo: true } }],
+        raw: true,
+        nest: true,
+      });
+      return procedures;
+    } catch (error) {
+      logger.error("Error fetching services menu", { error: String(error) });
+      return [];
+    }
   }
 
   async selectProcedure(idProcedure: string): Promise<any | null> {

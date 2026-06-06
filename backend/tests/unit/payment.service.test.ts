@@ -3,7 +3,7 @@ import { HttpError } from '../../src/utils/http'
 import { createHash } from 'node:crypto'
 
 jest.mock('../../src/models', () => ({
-  Pago: { findByPk: jest.fn(), findOne: jest.fn() },
+  Pago: { findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() },
   Cita: { findByPk: jest.fn() },
   Cliente: { findByPk: jest.fn() },
   Horario: { update: jest.fn() },
@@ -97,30 +97,33 @@ describe('PaymentService', () => {
   })
 
   describe('createPaymentLink', () => {
-    it('returns null when wompiPrivateKey is not set', async () => {
-      const payment = { id: 'p1', idCita: 'c1', monto: 15000 } as any
-      const result = await service.createPaymentLink(payment)
-      expect(result).toBeNull()
+    const mockPago = {
+      id: 'pago-1', idCita: 'cita-1', monto: 15000,
+      estado: 'pendiente', referencia: 'miturno-cita-1-123',
+      update: jest.fn().mockResolvedValue({}),
+    }
+
+    beforeEach(() => {
+      ;(Pago.create as jest.Mock).mockResolvedValue(mockPago)
+    })
+
+    it('throws when wompiPrivateKey is not set', async () => {
+      await expect(service.createPaymentLink({ id: 'cita-1', precio: 15000 })).rejects.toThrow()
     })
 
     it('calls Wompi API and returns checkout URL', async () => {
       mockEnv.wompiPrivateKey = 'test-key'
-      const payment = {
-        id: 'p1', idCita: 'cita-1', monto: 15000,
-        update: jest.fn().mockResolvedValue({}),
-      } as any
       ;(axios.post as jest.Mock).mockResolvedValue({ data: { data: { id: 'link-abc' } } })
 
-      const url = await service.createPaymentLink(payment)
+      const url = await service.createPaymentLink({ id: 'cita-1', precio: 15000 })
       expect(url).toBe('https://checkout.wompi.co/l/link-abc')
-      expect(payment.update).toHaveBeenCalledWith({ paymentLinkId: 'link-abc' })
+      expect(mockPago.update).toHaveBeenCalledWith({ paymentLinkId: 'link-abc' })
     })
 
     it('throws 502 when Wompi API fails', async () => {
       mockEnv.wompiPrivateKey = 'test-key'
-      const payment = { id: 'p1', idCita: 'cita-1', monto: 15000 } as any
       ;(axios.post as jest.Mock).mockRejectedValue(new Error('Network error'))
-      await expect(service.createPaymentLink(payment)).rejects.toThrow(HttpError)
+      await expect(service.createPaymentLink({ id: 'cita-1', precio: 15000 })).rejects.toThrow(HttpError)
     })
   })
 
@@ -199,22 +202,21 @@ describe('PaymentService', () => {
       mockEnv.wompiEventsSecret = secret
     })
 
-    it('returns early when event type is not transaction.updated', async () => {
-      const event = buildValidEvent(secret, { event: 'other.event' })
-      await expect(service.handleEvent(event)).resolves.toBeUndefined()
+    it('throws 400 when event type is not transaction.updated', async () => {
+      const event = buildValidEvent(secret, {}, { event: 'other.event' })
+      await expect(service.handleEvent(event)).rejects.toThrow(HttpError)
     })
 
-    it('returns early when no transaction in data', async () => {
+    it('throws 400 when no transaction in data', async () => {
       const event = buildValidEvent(secret)
-      jest.spyOn(service, 'verifyEvent').mockReturnValue()
       ;(event as any).data = {}
-      await expect(service.handleEvent(event)).resolves.toBeUndefined()
+      await expect(service.handleEvent(event)).rejects.toThrow(HttpError)
     })
 
-    it('returns early when payment not found for the transaction', async () => {
+    it('throws 500 when payment not found for the transaction', async () => {
       const event = buildValidEvent(secret)
       ;(Pago.findOne as jest.Mock).mockResolvedValue(null)
-      await expect(service.handleEvent(event)).resolves.toBeUndefined()
+      await expect(service.handleEvent(event)).rejects.toThrow(HttpError)
     })
 
     it('throws 409 when amount does not match', async () => {

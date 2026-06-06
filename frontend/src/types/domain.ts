@@ -105,6 +105,32 @@ export interface Pago {
   readonly referencia: string
 }
 
+// ── Pago de cita (vista barbero) ─────────────────────────────────────────────
+
+export interface PagoBooking {
+  readonly id: string
+  readonly citaId: string
+  readonly monto: number        // anticipo cobrado (COP)
+  readonly estado: EstadoPago
+  readonly referencia: string | null
+  readonly fecha: string        // ISO yyyy-mm-dd
+  readonly cliente: string      // nombre completo
+  readonly servicio: string
+}
+
+// ── Cliente con estadísticas (vista barbero) ──────────────────────────────────
+
+export interface ClienteConStats {
+  readonly id: string
+  readonly nombres: string
+  readonly apellidos: string
+  readonly email: string
+  readonly celular: string
+  readonly totalCitas: number
+  readonly ultimaVisita: string | null   // ISO yyyy-mm-dd
+  readonly servicioFrecuente: string | null
+}
+
 // ── Métricas plataforma ───────────────────────────────────────────────────────
 
 export interface MetricasPlataforma {

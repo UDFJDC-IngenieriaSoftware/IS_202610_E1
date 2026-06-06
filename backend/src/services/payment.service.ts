@@ -198,7 +198,7 @@ export class PaymentService {
   async handleEvent(event: WompiEvent, headerChecksum?: string): Promise<void> {
     console.log("handleEvent service", JSON.stringify(event));
 
-    // this.verifyEvent(event, headerChecksum);
+    this.verifyEvent(event, headerChecksum);
     if (event.event !== "transaction.updated" || !event.data.transaction) {
       throw new HttpError(400, "transaction no event");
     }
