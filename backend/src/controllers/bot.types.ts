@@ -5,11 +5,6 @@ export enum BotState {
   SELECT_DATE = "SELECT_DATE",
   SELECT_TIME_SLOT = "SELECT_TIME_SLOT",
   DATA_CONFIRMATION = "DATA_CONFIRMATION",
-  AGENDANDO_SELECCIONANDO_SERVICIO = "AGENDANDO_SELECCIONANDO_SERVICIO",
-  AGENDANDO_SELECCIONANDO_HORARIO = "AGENDANDO_SELECCIONANDO_HORARIO",
-  AGENDANDO_INGRESANDO_NOMBRE = "AGENDANDO_INGRESANDO_NOMBRE",
-  AGENDANDO_INGRESANDO_APELLIDO = "AGENDANDO_INGRESANDO_APELLIDO",
-  AGENDANDO_CONFIRMANDO = "AGENDANDO_CONFIRMANDO",
 }
 
 export interface UserSession {
@@ -46,6 +41,7 @@ export interface UserSession {
 export interface WebhookMessage {
   from: string;
   type: string;
+  userName?: string;
   text?: { body: string };
   interactive?: {
     list_reply?: { id: string };

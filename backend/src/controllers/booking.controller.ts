@@ -21,50 +21,61 @@ function hour(value: unknown): string {
   return result;
 }
 
-export async function getAvailability(req: Request, res: Response): Promise<void> {
+export async function getAvailability(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const serviceId = requiredString(
-    req.body?.idServicio ?? req.body?.serviceId ?? req.query.idServicio ?? req.query.serviceId,
+    req.body?.idServicio ??
+      req.body?.serviceId ??
+      req.query.idServicio ??
+      req.query.serviceId,
     "idServicio",
   );
-  const fecha = date(req.body?.fecha ?? req.body?.date ?? req.query.fecha ?? req.query.date);
+  const fecha = date(
+    req.body?.fecha ?? req.body?.date ?? req.query.fecha ?? req.query.date,
+  );
   res.json(await availability.getForService(serviceId, fecha));
 }
 
-export async function createBooking(req: Request, res: Response): Promise<void> {
-  const customer = req.body?.cliente ?? req.body?.customer ?? {};
-  const celular = requiredString(customer.celular ?? customer.phone, "cliente.celular", 7);
-  const { booking, payment } = await bookings.create({
-    idServicio: requiredString(req.body?.idServicio ?? req.body?.serviceId, "idServicio"),
-    fecha: date(req.body?.fecha ?? req.body?.date),
-    hora: hour(req.body?.hora ?? req.body?.startTime),
-    cliente: {
-      nombres: requiredString(customer.nombres ?? customer.name, "cliente.nombres", 2),
-      apellidos: requiredString(customer.apellidos ?? customer.lastName ?? "Cliente", "cliente.apellidos", 2),
-      celular,
-      email: emailString(customer.email ?? `${celular.replace(/\D/g, "")}@miturno.local`, "cliente.email"),
-    },
-  });
-  let paymentUrl: string | null = null;
-  let paymentWarning: string | undefined;
-  try {
-    paymentUrl = await payments.createPaymentLink(payment);
-  } catch {
-    paymentWarning = "Reserva creada; genera el enlace de pago nuevamente desde el panel.";
-  }
-  res.status(201).json({
-    ...serializeBooking(booking),
-    payment: {
-      id: payment.id,
-      amount: payment.monto,
-      status: payment.estado,
-      reference: payment.referencia,
-      paymentUrl,
-    },
-    ...(paymentWarning ? { warning: paymentWarning } : {}),
-  });
-}
+// export async function createBooking(req: Request, res: Response): Promise<void> {
+//   const customer = req.body?.cliente ?? req.body?.customer ?? {};
+//   const celular = requiredString(customer.celular ?? customer.phone, "cliente.celular", 7);
+//   const { booking, payment } = await bookings.create({
+//     idServicio: requiredString(req.body?.idServicio ?? req.body?.serviceId, "idServicio"),
+//     fecha: date(req.body?.fecha ?? req.body?.date),
+//     hora: hour(req.body?.hora ?? req.body?.startTime),
+//     cliente: {
+//       nombres: requiredString(customer.nombres ?? customer.name, "cliente.nombres", 2),
+//       apellidos: requiredString(customer.apellidos ?? customer.lastName ?? "Cliente", "cliente.apellidos", 2),
+//       celular,
+//       email: emailString(customer.email ?? `${celular.replace(/\D/g, "")}@miturno.local`, "cliente.email"),
+//     },
+//   });
+//   let paymentUrl: string | null = null;
+//   let paymentWarning: string | undefined;
+//   try {
+//     paymentUrl = await payments.createPaymentLink(payment);
+//   } catch {
+//     paymentWarning = "Reserva creada; genera el enlace de pago nuevamente desde el panel.";
+//   }
+//   res.status(201).json({
+//     ...serializeBooking(booking),
+//     payment: {
+//       id: payment.id,
+//       amount: payment.monto,
+//       status: payment.estado,
+//       reference: payment.referencia,
+//       paymentUrl,
+//     },
+//     ...(paymentWarning ? { warning: paymentWarning } : {}),
+//   });
+// }
 
-export async function listBookings(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function listBookings(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   const list = await bookings.listForBarber(req.auth!.sub, {
     fecha: typeof req.query.fecha === "string" ? req.query.fecha : undefined,
     desde: typeof req.query.desde === "string" ? req.query.desde : undefined,
@@ -73,18 +84,29 @@ export async function listBookings(req: AuthenticatedRequest, res: Response): Pr
   res.json(list.map(serializeBooking));
 }
 
-export async function getBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function getBooking(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   const id = requiredString(req.params.id, "id");
   res.json(serializeBooking(await bookings.getOwned(id, req.auth!.sub)));
 }
 
-export async function updateBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function updateBooking(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   const id = requiredString(req.params.id, "id");
   const estado = requiredString(req.body?.estado ?? req.body?.status, "estado");
-  res.json(serializeBooking(await bookings.updateStatus(id, req.auth!.sub, estado)));
+  res.json(
+    serializeBooking(await bookings.updateStatus(id, req.auth!.sub, estado)),
+  );
 }
 
-export async function transitionBooking(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function transitionBooking(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   const transitions: Record<string, string> = {
     cancel: "cancelada",
     complete: "completada",
@@ -94,17 +116,27 @@ export async function transitionBooking(req: AuthenticatedRequest, res: Response
   const action = requiredString(req.params.action, "action");
   const estado = transitions[action];
   if (!estado) throw new HttpError(400, "Transicion invalida");
-  res.json(serializeBooking(await bookings.updateStatus(id, req.auth!.sub, estado)));
+  res.json(
+    serializeBooking(await bookings.updateStatus(id, req.auth!.sub, estado)),
+  );
 }
 
-export async function bookingStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+export async function bookingStats(
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> {
   const list = await bookings.listForBarber(req.auth!.sub);
   const total = list.length;
-  const data = list.map(serializeBooking) as Array<{ estado: string; precio: number }>;
+  const data = list.map(serializeBooking) as Array<{
+    estado: string;
+    precio: number;
+  }>;
   res.json({
     total,
-    confirmadas: data.filter((booking) => booking.estado === "confirmada").length,
-    completadas: data.filter((booking) => booking.estado === "completada").length,
+    confirmadas: data.filter((booking) => booking.estado === "confirmada")
+      .length,
+    completadas: data.filter((booking) => booking.estado === "completada")
+      .length,
     canceladas: data.filter((booking) => booking.estado === "cancelada").length,
     ingresos: data
       .filter((booking) => booking.estado === "completada")

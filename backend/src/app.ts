@@ -1,8 +1,11 @@
 import express, { Request, Response } from "express";
 import { handleMessage, WebhookEntry } from "./controllers/bot.controller";
-import { apiHeaders, notFound, rateLimit } from "./middleware/api";
-import { correlationIdMiddleware } from "./middleware/correlation-id";
-import { errorHandler } from "./middleware/error-handler";
+import {
+  apiHeaders,
+  errorHandler,
+  notFound,
+  rateLimit,
+} from "./middleware/api";
 import { createApiRouter, createVersionedRouter } from "./routes";
 import logger from "./utils/logger";
 import { reminderJob } from "./jobs/reminder.job";
@@ -29,7 +32,12 @@ export function createApp(): express.Express {
     next();
   });
 
-  app.use("/api", rateLimit, createApiRouter());
+  // app.use("/api", rateLimit, createApiRouter());
+  app.use(
+    "/api",
+    // rateLimit,
+    createApiRouter(),
+  );
   app.use("/api/v1", rateLimit, createVersionedRouter());
 
   app.get("/health", (_req: Request, res: Response) => {
@@ -47,6 +55,8 @@ export function createApp(): express.Express {
   };
 
   const receiveWebhook = async (req: Request, res: Response): Promise<void> => {
+    console.log("receiveWebhook", JSON.stringify(req.body));
+
     res.sendStatus(200);
     const entries: WebhookEntry[] = req.body?.entry ?? [];
     for (const entry of entries) {
