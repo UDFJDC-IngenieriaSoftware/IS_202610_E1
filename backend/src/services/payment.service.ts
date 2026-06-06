@@ -48,24 +48,62 @@ function nestedValue(body: WompiEvent, property: string): string {
 export class PaymentService {
   serialize = serialize;
 
-  async createPaymentLink(payment: Pago): Promise<string | null> {
-    if (!env.wompiPrivateKey) return null;
+  public async createPayment(appointment: {
+    precio: number;
+    id: string;
+  }): Promise<Pago> {
+    console.log("createPayment", { appointment });
+
+    const newPayment = await Pago.create({
+      // id,
+      monto: appointment.precio,
+      estado: "pendiente",
+      referencia: `miturno-${appointment.id}-${Date.now()}`,
+      // paymentLinkId,
+      // transactionId,
+      idCita: appointment.id,
+    });
+
+    return newPayment;
+  }
+
+  async createPaymentLink(paymentData: {
+    precio: number;
+    id: string;
+  }): Promise<string | null> {
+    const payment = await this.createPayment(paymentData);
+
+    if (!env.wompiPrivateKey) throw Error("wompiPrivateKey does not exist");
+
     try {
+      const requestData = {
+        name: `Anticipo cita ${payment.idCita.slice(0, 8)}`,
+        description: "Anticipo de reserva MiTurno",
+        single_use: true,
+        collect_shipping: false,
+        currency: "COP",
+        amount_in_cents: Math.round(payment.monto * 100),
+        sku: payment.idCita,
+        redirect_url: env.paymentRedirectUrl,
+      };
+      const headers = {
+        headers: { Authorization: `Bearer ${env.wompiPrivateKey}` },
+      };
+      const url = `${env.wompiApiUrl}/payment_links`;
+
+      console.log("request", JSON.stringify({ requestData, headers, url }));
+
       const response = await axios.post<WompiLinkResponse>(
-        `${env.wompiApiUrl}/payment_links`,
-        {
-          name: `Anticipo cita ${payment.idCita.slice(0, 8)}`,
-          description: "Anticipo de reserva MiTurno",
-          single_use: true,
-          collect_shipping: false,
-          currency: "COP",
-          amount_in_cents: Math.round(payment.monto * 100),
-          sku: payment.idCita,
-          redirect_url: env.paymentRedirectUrl,
-        },
-        { headers: { Authorization: `Bearer ${env.wompiPrivateKey}` } },
+        url,
+        requestData,
+        headers,
       );
+
+      console.log("wompi response data", JSON.stringify(response.data));
+
       const linkId = response.data.data.id;
+      console.log("wompi response linkId", linkId);
+
       await payment.update({ paymentLinkId: linkId });
       return `https://checkout.wompi.co/l/${linkId}`;
     } catch (error) {
@@ -75,34 +113,64 @@ export class PaymentService {
   }
 
   verifyEvent(event: WompiEvent, headerChecksum?: string): void {
+    console.log("verifyEvent", JSON.stringify({ event, headerChecksum }));
+
     if (!env.wompiEventsSecret) {
+      console.log("Webhook de pagos no configurado");
       throw new HttpError(503, "Webhook de pagos no configurado");
     }
-    const values = event.signature.properties.map((property) => nestedValue(event, property)).join("");
+    const values = event.signature.properties
+      .map((property) => nestedValue(event, property))
+      .join("");
     const expected = createHash("sha256")
       .update(`${values}${event.timestamp}${env.wompiEventsSecret}`)
       .digest("hex")
       .toUpperCase();
-    const received = (headerChecksum || event.signature.checksum || "").toUpperCase();
+    const received = (
+      headerChecksum ||
+      event.signature.checksum ||
+      ""
+    ).toUpperCase();
     const expectedBuffer = Buffer.from(expected);
     const receivedBuffer = Buffer.from(received);
     if (
       receivedBuffer.length !== expectedBuffer.length ||
       !timingSafeEqual(receivedBuffer, expectedBuffer)
     ) {
+      console.log("Firma de evento Wompi invalida");
+
       throw new HttpError(401, "Firma de evento Wompi invalida");
     }
   }
 
   async handleEvent(event: WompiEvent, headerChecksum?: string): Promise<void> {
-    this.verifyEvent(event, headerChecksum);
-    if (event.event !== "transaction.updated" || !event.data.transaction) return;
+    console.log("handleEvent service", JSON.stringify(event));
+
+    // this.verifyEvent(event, headerChecksum);
+    if (event.event !== "transaction.updated" || !event.data.transaction) {
+      throw new HttpError(400, "transaction no event");
+    }
+
+    console.log("verified");
+
     const transaction = event.data.transaction;
     const payment = transaction.payment_link_id
-      ? await Pago.findOne({ where: { paymentLinkId: transaction.payment_link_id } })
+      ? await Pago.findOne({
+          where: { paymentLinkId: transaction.payment_link_id },
+        })
       : await Pago.findOne({ where: { referencia: transaction.reference } });
-    if (!payment) return;
+    console.log("payment", JSON.stringify({ payment }));
+
+    if (!payment) {
+      throw new HttpError(
+        500,
+        "Pago no ha sido encontrado para: ",
+        JSON.stringify(transaction),
+      );
+    }
     if (transaction.amount_in_cents !== Math.round(payment.monto * 100)) {
+      console.log("El valor pagado no corresponde al anticipo");
+
       throw new HttpError(409, "El valor pagado no corresponde al anticipo");
     }
     const paymentStatus: Record<string, string> = {
@@ -121,20 +189,24 @@ export class PaymentService {
       if (cliente) {
         if (estado === "exitoso") {
           await cita.update({ estado: "confirmada" });
-          await whatsappService.sendText(
-            cliente.celular,
-            `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
-          ).catch(console.error);
+          await whatsappService
+            .sendText(
+              cliente.celular,
+              `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`,
+            )
+            .catch(console.error);
         } else if (estado === "fallido") {
           await cita.update({ estado: "cancelada" });
           await Horario.update(
             { estado: "libre" },
-            { where: { id: cita.idHorario } }
+            { where: { id: cita.idHorario } },
           );
-          await whatsappService.sendText(
-            cliente.celular,
-            `❌ Lo sentimos. El pago de tu cita a través de PSE fue rechazado por tu banco o falló. Tu reservación ha sido cancelada y el horario liberado.`
-          ).catch(console.error);
+          await whatsappService
+            .sendText(
+              cliente.celular,
+              `❌ Lo sentimos. El pago de tu cita a través de PSE fue rechazado por tu banco o falló. Tu reservación ha sido cancelada y el horario liberado.`,
+            )
+            .catch(console.error);
         }
       }
     }
