@@ -13,6 +13,9 @@ import { test, expect } from '../fixtures/auth.fixture'
 const RUTA = '/panel/horario'
 
 test.describe('CU-07 · Horarios', () => {
+  // Serial: FA-02 y persist modifican estado compartido (horario del barbero)
+  test.describe.configure({ mode: 'serial' })
+
   test.beforeEach(async ({ page }) => {
     await page.goto(RUTA)
     // Esperar que el horario semanal esté renderizado
@@ -59,6 +62,69 @@ test.describe('CU-07 · Horarios', () => {
 
     // Eventualmente vuelve al estado estable
     await expect(btnGuardar).toContainText(/Guardar|Guardado/, { timeout: 10_000 })
+  })
+
+  test('la modificación de horario persiste tras recargar la página', async ({ page }) => {
+    const selectApertura = page.locator('select[aria-label^="Apertura"]').first()
+    const selectCierre   = page.locator('select[aria-label^="Cierre"]').first()
+    const aperturaOriginal = await selectApertura.inputValue()
+
+    // Seleccionar la siguiente opción disponible como nuevo valor
+    const options = await selectApertura.locator('option').all()
+    const nuevoValor = options.length > 1
+      ? (await options[1].getAttribute('value')) ?? aperturaOriginal
+      : aperturaOriginal
+
+    if (nuevoValor === aperturaOriginal) { test.skip(); return }
+
+    await selectApertura.selectOption(nuevoValor)
+    const btnGuardar = page.locator('button.btn.primary')
+    await btnGuardar.click()
+    await expect(btnGuardar).toContainText(/Guardado/, { timeout: 5_000 })
+
+    // Recargar y verificar persistencia
+    await page.reload()
+    await expect(page.locator('div.schedule')).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('select[aria-label^="Apertura"]').first()).toHaveValue(nuevoValor)
+
+    // Restaurar valor original para no contaminar tests posteriores
+    await page.locator('select[aria-label^="Apertura"]').first().selectOption(aperturaOriginal)
+    // Asegurar que cierre sigue siendo mayor que la apertura restaurada
+    const cierreActual = await selectCierre.inputValue()
+    if (cierreActual <= aperturaOriginal) {
+      // Buscar primera opción mayor que apertura
+      for (const opt of options) {
+        const val = await opt.getAttribute('value') ?? ''
+        if (val > aperturaOriginal) { await selectCierre.selectOption(val); break }
+      }
+    }
+    await page.locator('button.btn.primary').click()
+    await expect(page.locator('button.btn.primary')).toContainText(/Guardado/, { timeout: 5_000 })
+  })
+
+  test('FA-02 · cierre igual a apertura → backend rechaza y el botón no muestra "¡Guardado!"', async ({ page }) => {
+    const selectApertura = page.locator('select[aria-label^="Apertura"]').first()
+    const selectCierre   = page.locator('select[aria-label^="Cierre"]').first()
+    const aperturaVal = await selectApertura.inputValue()
+    const cierreOriginal = await selectCierre.inputValue()
+
+    // Poner cierre == apertura → backend devuelve 400 "La hora inicial debe ser anterior a la hora final"
+    await selectCierre.selectOption(aperturaVal)
+
+    const btnGuardar = page.locator('button.btn.primary')
+    await btnGuardar.click()
+
+    // Esperar que la petición falle y el UI vuelva a estado estable
+    await page.waitForTimeout(2_000)
+
+    // No debe aparecer "¡Guardado!" — el error del servidor fue recibido
+    await expect(btnGuardar).not.toContainText('¡Guardado!')
+    await expect(btnGuardar).toContainText('Guardar cambios')
+
+    // Restaurar cierre original para no dejar el horario inválido
+    await selectCierre.selectOption(cierreOriginal)
+    await btnGuardar.click()
+    await expect(btnGuardar).toContainText(/Guardado/, { timeout: 5_000 })
   })
 
   test('el resumen muestra días laborables y horas abiertas', async ({ page }) => {

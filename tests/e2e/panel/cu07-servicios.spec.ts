@@ -93,6 +93,16 @@ test.describe('CU-07 · Servicios', () => {
     await expect(fila).not.toHaveClass(/row--off/, { timeout: 3_000 })
   })
 
+  test('la edición persiste tras recargar la página', async ({ page }) => {
+    await page.reload()
+    await expect(page.locator(TABLA)).toBeVisible({ timeout: 10_000 })
+
+    const fila = page.locator('tr', { has: page.locator('.svc-name', { hasText: NOMBRE_TEST }) })
+    await expect(fila).toBeVisible({ timeout: 5_000 })
+    // El precio editado (40.000 COP) sigue reflejado tras recarga
+    await expect(fila.locator('.num.strong')).toContainText('40')
+  })
+
   test('elimina el servicio de prueba y desaparece de la tabla', async ({ page }) => {
     const fila = page.locator('tr', { has: page.locator('.svc-name', { hasText: NOMBRE_TEST }) })
     await fila.locator(`button[aria-label^="Eliminar"]`).click()
@@ -130,5 +140,13 @@ test.describe('CU-07 · Servicios', () => {
     await expect(page.getByRole('dialog')).toBeVisible()
 
     await page.keyboard.press('Escape')
+  })
+
+  // ── Gaps documentados ────────────────────────────────────────────────
+  // eslint-disable-next-line playwright/no-skipped-test
+  test.skip('CU-07 paso 5-6 · políticas de cancelación y mensajes automáticos — no implementados', () => {
+    // HorarioPage y ServiciosPage no incluyen sección de políticas de cancelación/reprogramación
+    // ni configuración de mensajes automáticos del chatbot.
+    // Pendiente según CU-07 pasos 5 y 6 del plan de verificación.
   })
 })

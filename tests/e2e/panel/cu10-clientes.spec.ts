@@ -147,6 +147,33 @@ test.describe('CU-10 · Clientes', () => {
     await page.keyboard.press('Escape')
   })
 
+  test('la edición de nombre persiste tras recargar la página', async ({ page }) => {
+    const primeraFila = page.locator(`${TABLA} tbody tr.row--clickable`).first()
+    await primeraFila.click()
+
+    const modal = page.getByRole('dialog', { name: 'Perfil del cliente' })
+    await expect(modal).toBeVisible()
+    await modal.locator('button', { hasText: 'Editar' }).click()
+
+    const inputNombre = modal.getByRole('textbox', { name: 'Nombre' })
+    const valorOriginal = await inputNombre.inputValue()
+    const nuevoNombre   = valorOriginal.endsWith('_p') ? valorOriginal.slice(0, -2) : `${valorOriginal}_p`
+
+    await inputNombre.fill(nuevoNombre)
+    await modal.locator('button[type="submit"]:has-text("Guardar")').click()
+    await expect(inputNombre).not.toBeVisible({ timeout: 5_000 })
+    await page.keyboard.press('Escape')
+
+    // Recargar y verificar que el nombre actualizado aparece en la tabla
+    await page.reload()
+    await expect(page.locator(TABLA)).toBeVisible({ timeout: 10_000 })
+
+    const filasActualizadas = page.locator(`${TABLA} tbody tr.row--clickable`)
+    await expect(
+      filasActualizadas.filter({ has: page.locator('.strong', { hasText: nuevoNombre }) }).first(),
+    ).toBeVisible({ timeout: 5_000 })
+  })
+
   test('FA-03 · guardar con nombre vacío muestra error de validación', async ({ page }) => {
     await page.locator(`${TABLA} tbody tr.row--clickable`).first().click()
     const modal = page.getByRole('dialog', { name: 'Perfil del cliente' })
@@ -161,5 +188,13 @@ test.describe('CU-10 · Clientes', () => {
     ).toBeVisible({ timeout: 3_000 })
 
     await page.keyboard.press('Escape')
+  })
+
+  // ── Gaps documentados ────────────────────────────────────────────────────
+  // eslint-disable-next-line playwright/no-skipped-test
+  test.skip('FA-02 · eliminar cliente con citas futuras — función no implementada', () => {
+    // ClienteModal.tsx no tiene botón de eliminar.
+    // customerRoutes no define DELETE /api/clientes/:id.
+    // Pendiente según CU-10 FA-02 del plan de verificación.
   })
 })
