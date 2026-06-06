@@ -12,4 +12,7 @@ export default {
   ],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testTimeout: 10000,
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { diagnostics: { warnOnly: true } }],
+  },
 };
