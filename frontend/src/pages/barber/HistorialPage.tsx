@@ -1,14 +1,9 @@
 /**
  * HistorialPage — /panel/historial
  *
- * Tabla de citas con filtros combinados:
- *  - Búsqueda por cliente/servicio (debounced 250ms vía useFilteredHistorial)
- *  - Filtro de estado
- *  - Filtro de periodo (mes / semana / año / todo)
- *
- * Performance:
- *  - useFilteredHistorial encapsula useMemo + useDebounce.
- *  - HistorialRow envuelto en React.memo.
+ * Pestañas:
+ *  - Citas: tabla filtrable de citas con búsqueda + estado + periodo
+ *  - Pagos: tabla de anticipos PSE recibidos filtrable por periodo
  */
 import { useState, useMemo, memo, useCallback } from 'react'
 import { Topbar }       from '../../components/organisms/Topbar'
@@ -23,10 +18,15 @@ import {
   useFilteredHistorial,
   type FiltroFecha,
 } from '../../hooks/useFilteredHistorial'
+import { useCitaPagos } from '../../hooks/usePagos'
+import { ESTADO_PAGO_META } from '../../types'
 import { fmtCOP, fmtFechaCorta, initials } from '../../utils/format'
-import type { Cita, EstadoCita } from '../../types'
+import type { Cita, EstadoCita, PagoBooking } from '../../types'
 
-/* ── Fila de tabla memoizada ─────────────────────────────────────── */
+// ── Pestaña activa ────────────────────────────────────────────────────────────
+type Tab = 'citas' | 'pagos'
+
+/* ── Fila citas ──────────────────────────────────────────────────────── */
 const HistorialRow = memo(function HistorialRow({
   cita,
   onOpen,
@@ -35,10 +35,8 @@ const HistorialRow = memo(function HistorialRow({
   onOpen: (c: Cita) => void
 }) {
   return (
-    <tr className="row--clickable" onClick={() => onOpen(cita)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onOpen(cita)}>
-      <td>
-        <time dateTime={cita.fecha}>{fmtFechaCorta(cita.fecha)}</time>
-      </td>
+    <tr className="row--clickable" onClick={() => onOpen(cita)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onOpen(cita)}>
+      <td><time dateTime={cita.fecha}>{fmtFechaCorta(cita.fecha)}</time></td>
       <td className="num">{cita.hora}</td>
       <td>
         <div className="cell-cliente">
@@ -57,7 +55,31 @@ const HistorialRow = memo(function HistorialRow({
   )
 })
 
-/* ── Constantes de filtros ──────────────────────────────────────── */
+/* ── Fila pagos ──────────────────────────────────────────────────────── */
+const PagoRow = memo(function PagoRow({ pago }: { pago: PagoBooking }) {
+  const meta = ESTADO_PAGO_META[pago.estado]
+  return (
+    <tr>
+      <td><time dateTime={pago.fecha}>{fmtFechaCorta(pago.fecha)}</time></td>
+      <td>{pago.cliente}</td>
+      <td>{pago.servicio}</td>
+      <td className="num strong">{fmtCOP(pago.monto)}</td>
+      <td>
+        <span
+          className="status-pill"
+          style={{ background: meta.bg, color: meta.fg, border: `1px solid ${meta.bd}` }}
+        >
+          {meta.label}
+        </span>
+      </td>
+      <td className="muted small" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {pago.referencia ?? '—'}
+      </td>
+    </tr>
+  )
+})
+
+/* ── Constantes de filtros ──────────────────────────────────────────── */
 const FILTROS_ESTADO: { key: EstadoCita | 'todos'; label: string }[] = [
   { key: 'todos',      label: 'Todos'      },
   { key: 'confirmada', label: 'Confirmadas' },
@@ -70,55 +92,52 @@ const FILTROS_ESTADO: { key: EstadoCita | 'todos'; label: string }[] = [
 const FILTROS_FECHA: { key: FiltroFecha; label: string }[] = [
   { key: 'mes',    label: 'Este mes'    },
   { key: 'semana', label: 'Esta semana' },
-  { key: 'año',    label: 'Este año'   },
-  { key: 'todo',   label: 'Todo'       },
+  { key: 'año',    label: 'Este año'    },
+  { key: 'todo',   label: 'Todo'        },
 ]
 
-/* ── Componente principal ─────────────────────────────────────────── */
+/* ── Componente principal ─────────────────────────────────────────────── */
 const PAGE_SIZE = 20
 
 export function HistorialPage() {
+  const [tab,           setTab]           = useState<Tab>('citas')
   const [busqueda,      setBusqueda]      = useState('')
   const [filtroEstado,  setFiltroEstado]  = useState<EstadoCita | 'todos'>('todos')
   const [filtroFecha,   setFiltroFecha]   = useState<FiltroFecha>('mes')
   const [pagina,        setPagina]        = useState(1)
   const [citaAbierta,   setCitaAbierta]   = useState<Cita | null>(null)
 
-  const { filtered, stats, loading } = useFilteredHistorial({
-    busqueda,
-    filtroEstado,
-    filtroFecha,
-  })
+  const { filtered, stats, loading } = useFilteredHistorial({ busqueda, filtroEstado, filtroFecha })
+  const { data: pagosData, loading: pagosLoading } = useCitaPagos()
 
-  /* Paginación simple */
+  const pagos = pagosData ?? []
+
+  /* Stats de pagos */
+  const pagoStats = useMemo(() => {
+    const exitosos  = pagos.filter((p) => p.estado === 'exitoso')
+    const ingresos  = exitosos.reduce((s, p) => s + p.monto, 0)
+    const fallidos  = pagos.filter((p) => p.estado === 'fallido').length
+    return { total: pagos.length, ingresos, fallidos }
+  }, [pagos])
+
+  /* Paginación citas */
   const totalPaginas = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageCitas    = useMemo(
     () => filtered.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE),
     [filtered, pagina],
   )
 
-  // Resetear página cuando cambian filtros
-  const handleEstado = useCallback((k: EstadoCita | 'todos') => {
-    setFiltroEstado(k)
-    setPagina(1)
-  }, [])
-  const handleFecha = useCallback((k: FiltroFecha) => {
-    setFiltroFecha(k)
-    setPagina(1)
-  }, [])
-  const handleBusqueda = useCallback((v: string) => {
-    setBusqueda(v)
-    setPagina(1)
-  }, [])
-
-  const onOpenCita  = useCallback((c: Cita) => setCitaAbierta(c), [])
-  const onCloseCita = useCallback(() => setCitaAbierta(null), [])
+  const handleEstado   = useCallback((k: EstadoCita | 'todos') => { setFiltroEstado(k); setPagina(1) }, [])
+  const handleFecha    = useCallback((k: FiltroFecha) => { setFiltroFecha(k); setPagina(1) }, [])
+  const handleBusqueda = useCallback((v: string) => { setBusqueda(v); setPagina(1) }, [])
+  const onOpenCita     = useCallback((c: Cita) => setCitaAbierta(c), [])
+  const onCloseCita    = useCallback(() => setCitaAbierta(null), [])
 
   return (
     <div className="page">
       <Topbar
-        title="Historial de citas"
-        subtitle="Todo lo que ha pasado por tu agenda"
+        title="Historial"
+        subtitle="Citas y pagos de tu agenda"
         actions={
           <button className="btn ghost" type="button">
             <Icon name="download" size={15} /> Exportar CSV
@@ -127,127 +146,135 @@ export function HistorialPage() {
       />
 
       <div className="page-body">
-        {/* Stats del periodo filtrado */}
-        <div className="stat-row stat-row--3">
-          <Stat
-            label="Citas en el periodo"
-            value={String(filtered.length)}
-            sub="Filtros aplicados"
-          />
-          <Stat
-            label="Ingresos totales"
-            value={fmtCOP(stats.ingresos)}
-            sub="Solo confirmadas y completadas"
-          />
-          <Stat
-            label="Tasa de no-show"
-            value={`${stats.nsRate}%`}
-            sub={`${stats.nsCount} de ${filtered.length} citas en el periodo`}
-            accent={stats.nsRate > 10}
-          />
+        {/* Tabs */}
+        <div className="seg" role="tablist" aria-label="Secciones del historial" style={{ marginBottom: 16 }}>
+          <button
+            role="tab"
+            aria-selected={tab === 'citas'}
+            className={tab === 'citas' ? 'is-on' : ''}
+            onClick={() => setTab('citas')}
+          >
+            <Icon name="calendar_month" size={14} /> Citas
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'pagos'}
+            className={tab === 'pagos' ? 'is-on' : ''}
+            onClick={() => setTab('pagos')}
+          >
+            <Icon name="payments" size={14} /> Pagos PSE
+          </button>
         </div>
 
-        {/* Tabla con filtros */}
-        <Card
-          title={
-            <div className="hist-filters">
-              <SearchInput
-                value={busqueda}
-                onChange={handleBusqueda}
-                placeholder="Buscar cliente o servicio…"
-                inline
+        {/* ── Pestaña CITAS ─────────────────────────────────────────── */}
+        {tab === 'citas' && (
+          <>
+            <div className="stat-row stat-row--3">
+              <Stat label="Citas en el periodo" value={String(filtered.length)} sub="Filtros aplicados" />
+              <Stat label="Ingresos totales" value={fmtCOP(stats.ingresos)} sub="Solo confirmadas y completadas" />
+              <Stat
+                label="Tasa de no-show"
+                value={`${stats.nsRate}%`}
+                sub={`${stats.nsCount} de ${filtered.length} citas`}
+                accent={stats.nsRate > 10}
               />
-              {/* Filtro periodo */}
-              <div className="seg" role="group" aria-label="Filtrar por periodo">
-                {FILTROS_FECHA.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    className={filtroFecha === key ? 'is-on' : ''}
-                    onClick={() => handleFecha(key)}
-                    aria-pressed={filtroFecha === key}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {/* Filtro estado */}
-              <div className="seg" role="group" aria-label="Filtrar por estado">
-                {FILTROS_ESTADO.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    className={filtroEstado === key ? 'is-on' : ''}
-                    onClick={() => handleEstado(key)}
-                    aria-pressed={filtroEstado === key}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
             </div>
-          }
-          flush
-        >
-          {loading && filtered.length === 0 ? (
-            <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando…</p>
-          ) : (
-            <>
-              <table className="table table--historial" aria-label="Historial de citas">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Cliente</th>
-                    <th>Servicio</th>
-                    <th className="num">Monto</th>
-                    <th>Estado</th>
-                    <th aria-hidden="true" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageCitas.map((c) => (
-                    <HistorialRow key={c.id} cita={c} onOpen={onOpenCita} />
-                  ))}
-                  {pageCitas.length === 0 && (
-                    <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: '24px' }}>
-                        No hay citas con los filtros aplicados.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
 
-              {/* Pie: total + paginación */}
-              <div className="table-foot">
-                <span className="muted">
-                  Mostrando {pageCitas.length} de {filtered.length} citas
-                </span>
-                {totalPaginas > 1 && (
-                  <nav className="pager" aria-label="Páginas del historial">
-                    <IconButton
-                      icon="chevron_left"
-                      label="Página anterior"
-                      onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                      disabled={pagina === 1}
-                    />
-                    <span aria-live="polite">{pagina} / {totalPaginas}</span>
-                    <IconButton
-                      icon="chevron_right"
-                      label="Página siguiente"
-                      onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                      disabled={pagina === totalPaginas}
-                    />
-                  </nav>
-                )}
-              </div>
-            </>
-          )}
-        </Card>
+            <Card
+              title={
+                <div className="hist-filters">
+                  <SearchInput value={busqueda} onChange={handleBusqueda} placeholder="Buscar cliente o servicio…" inline />
+                  <div className="seg" role="group" aria-label="Filtrar por periodo">
+                    {FILTROS_FECHA.map(({ key, label }) => (
+                      <button key={key} className={filtroFecha === key ? 'is-on' : ''} onClick={() => handleFecha(key)} aria-pressed={filtroFecha === key}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="seg" role="group" aria-label="Filtrar por estado">
+                    {FILTROS_ESTADO.map(({ key, label }) => (
+                      <button key={key} className={filtroEstado === key ? 'is-on' : ''} onClick={() => handleEstado(key)} aria-pressed={filtroEstado === key}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              }
+              flush
+            >
+              {loading && filtered.length === 0 ? (
+                <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando…</p>
+              ) : (
+                <>
+                  <table className="table table--historial" aria-label="Historial de citas">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th><th>Hora</th><th>Cliente</th>
+                        <th>Servicio</th><th className="num">Monto</th><th>Estado</th><th aria-hidden="true" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageCitas.map((c) => <HistorialRow key={c.id} cita={c} onOpen={onOpenCita} />)}
+                      {pageCitas.length === 0 && (
+                        <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No hay citas con los filtros aplicados.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <div className="table-foot">
+                    <span className="muted">Mostrando {pageCitas.length} de {filtered.length} citas</span>
+                    {totalPaginas > 1 && (
+                      <nav className="pager" aria-label="Páginas del historial">
+                        <IconButton icon="chevron_left" label="Anterior" onClick={() => setPagina((p) => Math.max(1, p - 1))} disabled={pagina === 1} />
+                        <span aria-live="polite">{pagina} / {totalPaginas}</span>
+                        <IconButton icon="chevron_right" label="Siguiente" onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas} />
+                      </nav>
+                    )}
+                  </div>
+                </>
+              )}
+            </Card>
+          </>
+        )}
+
+        {/* ── Pestaña PAGOS ─────────────────────────────────────────── */}
+        {tab === 'pagos' && (
+          <>
+            <div className="stat-row stat-row--3">
+              <Stat label="Anticipos recibidos" value={String(pagoStats.total)} sub={`${pagoStats.fallidos} fallidos`} />
+              <Stat label="Ingresos anticipos" value={fmtCOP(pagoStats.ingresos)} sub="Solo pagos exitosos" />
+              <Stat
+                label="Tasa de fallo"
+                value={pagoStats.total ? `${Math.round((pagoStats.fallidos / pagoStats.total) * 100)}%` : '0%'}
+                sub="Pagos rechazados o expirados"
+                accent={pagoStats.fallidos > 0}
+              />
+            </div>
+
+            <Card title="Pagos PSE" flush>
+              {pagosLoading ? (
+                <p style={{ padding: 32, color: 'var(--muted)' }} aria-live="polite">Cargando pagos…</p>
+              ) : (
+                <table className="table" aria-label="Pagos PSE">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th><th>Cliente</th><th>Servicio</th>
+                      <th className="num">Anticipo</th><th>Estado</th><th>Referencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagos.map((p) => <PagoRow key={p.id} pago={p} />)}
+                    {pagos.length === 0 && (
+                      <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No hay pagos registrados.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </Card>
+          </>
+        )}
       </div>
 
-      {citaAbierta && (
-        <CitaModal cita={citaAbierta} onClose={onCloseCita} />
-      )}
+      {citaAbierta && <CitaModal cita={citaAbierta} onClose={onCloseCita} />}
     </div>
   )
 }

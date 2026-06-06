@@ -32,7 +32,8 @@ const DashboardPage = lazy(() => import('./pages/barber/DashboardPage').then(m =
 const AgendaPage    = lazy(() => import('./pages/barber/AgendaPage').then(m => ({ default: m.AgendaPage })))
 const ServiciosPage = lazy(() => import('./pages/barber/ServiciosPage').then(m => ({ default: m.ServiciosPage })))
 const HorarioPage   = lazy(() => import('./pages/barber/HorarioPage').then(m => ({ default: m.HorarioPage })))
-const HistorialPage = lazy(() => import('./pages/barber/HistorialPage').then(m => ({ default: m.HistorialPage })))
+const HistorialPage  = lazy(() => import('./pages/barber/HistorialPage').then(m => ({ default: m.HistorialPage })))
+const ClientesPage   = lazy(() => import('./pages/barber/ClientesPage').then(m => ({ default: m.ClientesPage })))
 
 // Páginas del admin de plataforma — lazy
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })))
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
       { path: 'servicios', element: <ServiciosPage /> },
       { path: 'horario',   element: <HorarioPage />   },
       { path: 'historial', element: <HistorialPage /> },
+      { path: 'clientes',  element: <ClientesPage />  },
     ],
   },
 

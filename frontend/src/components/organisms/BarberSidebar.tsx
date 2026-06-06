@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/panel/servicios', icon: 'content_cut',    label: 'Servicios'  },
   { to: '/panel/horario',   icon: 'schedule',       label: 'Horario'    },
   { to: '/panel/historial', icon: 'history',        label: 'Historial'  },
+  { to: '/panel/clientes',  icon: 'group',          label: 'Clientes'   },
 ] as const
 
 export function BarberSidebar() {
