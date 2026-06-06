@@ -7,7 +7,7 @@ const mockHandleEvent = jest.fn()
 const mockSerialize = jest.fn((p: any, url?: any) => ({ id: p.id, bookingId: p.idCita, amount: p.monto, status: p.estado, paymentUrl: url ?? null }))
 
 jest.mock('../../src/models', () => ({
-  Pago: { findOne: jest.fn(), findByPk: jest.fn() },
+  Pago: { findOne: jest.fn(), findByPk: jest.fn(), findAll: jest.fn() },
   Cita: {}, Cliente: {}, Horario: {}, Servicio: {}, Barbero: {}, sequelize: { transaction: jest.fn() },
 }))
 jest.mock('../../src/services/booking.service', () => ({
@@ -70,24 +70,85 @@ describe('payment.controller', () => {
     })
   })
 
-  // createPaymentLink is commented out in the controller; tests skipped until enabled
-  describe.skip('createPaymentLink', () => {
+  describe('createPaymentLink', () => {
     it('returns payment with link URL', async () => {
       mockGetOwned.mockResolvedValue(mockBooking)
       ;(Pago.findOne as jest.Mock).mockResolvedValue(mockPayment)
       mockCreatePaymentLink.mockResolvedValue('https://checkout.wompi.co/l/abc')
       const req = { auth: { sub: 'barber-1' }, params: { bookingId: 'b1' }, body: {} } as any
       const res = mockRes()
-      await (paymentController as any).createPaymentLink(req, res)
+      await paymentController.createPaymentLink(req, res)
       expect(res.json).toHaveBeenCalled()
+      expect(mockCreatePaymentLink).toHaveBeenCalledWith({
+        id: mockPayment.idCita,
+        precio: mockPayment.monto,
+      })
     })
 
-    it('throws 503 when wompi is not configured', async () => {
+    it('throws 503 when wompi returns null', async () => {
       mockGetOwned.mockResolvedValue(mockBooking)
       ;(Pago.findOne as jest.Mock).mockResolvedValue(mockPayment)
       mockCreatePaymentLink.mockResolvedValue(null)
       const req = { auth: { sub: 'barber-1' }, params: { bookingId: 'b1' }, body: {} } as any
-      await expect((paymentController as any).createPaymentLink(req, mockRes())).rejects.toThrow(HttpError)
+      await expect(paymentController.createPaymentLink(req, mockRes())).rejects.toThrow(HttpError)
+    })
+  })
+
+  describe('listPayments', () => {
+    const mockPagoRow = {
+      id: 'p1',
+      idCita: 'b1',
+      monto: 15000,
+      estado: 'exitoso',
+      referencia: 'miturno-b1-123',
+      createdAt: new Date('2026-06-15'),
+      cita: {
+        cliente: { nombres: 'Juan', apellidos: 'García' },
+        horario: { servicio: { nombre: 'Corte' } },
+      },
+    }
+
+    it('returns list of barbero cita payments', async () => {
+      ;(Pago.findAll as jest.Mock).mockResolvedValue([mockPagoRow])
+      const req = { auth: { sub: 'barber-1' }, query: {} } as any
+      const res = mockRes()
+      await paymentController.listPayments(req, res)
+      const result = res.json.mock.calls[0][0]
+      expect(Array.isArray(result)).toBe(true)
+      expect(result[0]).toMatchObject({
+        id: 'p1',
+        monto: 15000,
+        estado: 'exitoso',
+        cliente: 'Juan García',
+        servicio: 'Corte',
+        fecha: '2026-06-15',
+      })
+    })
+
+    it('returns empty list when no payments found', async () => {
+      ;(Pago.findAll as jest.Mock).mockResolvedValue([])
+      const req = { auth: { sub: 'barber-1' }, query: {} } as any
+      const res = mockRes()
+      await paymentController.listPayments(req, res)
+      expect(res.json).toHaveBeenCalledWith([])
+    })
+
+    it('passes date filters to query', async () => {
+      ;(Pago.findAll as jest.Mock).mockResolvedValue([])
+      const req = { auth: { sub: 'barber-1' }, query: { desde: '2026-06-01', hasta: '2026-06-30' } } as any
+      await paymentController.listPayments(req, mockRes())
+      expect(Pago.findAll).toHaveBeenCalled()
+    })
+
+    it('uses fallback labels when cita relations are missing', async () => {
+      const incomplete = { ...mockPagoRow, cita: null, createdAt: new Date('2026-06-10') }
+      ;(Pago.findAll as jest.Mock).mockResolvedValue([incomplete])
+      const req = { auth: { sub: 'barber-1' }, query: {} } as any
+      const res = mockRes()
+      await paymentController.listPayments(req, res)
+      const result = res.json.mock.calls[0][0]
+      expect(result[0].cliente).toBe('—')
+      expect(result[0].servicio).toBe('—')
     })
   })
 

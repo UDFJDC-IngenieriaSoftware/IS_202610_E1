@@ -84,23 +84,15 @@ function bookingRoutes(): Router {
   }, asyncHandler(booking.transitionBooking));
   return router;
 }
-/*
 function paymentRoutes(): Router {
   const router = Router();
   router.use(requireAuth);
+  router.get("/",            asyncHandler(payment.listPayments));
   router.get("/:bookingId", asyncHandler(payment.getPayment));
-  router.post("/link", validate(paymentSchemas.create), asyncHandler(payment.createPaymentLink));
-  router.post("/:paymentId/refund", asyncHandler(payment.refundPayment));
+  router.post("/link",      validate(paymentSchemas.create), asyncHandler(payment.createPaymentLink));
+  // router.post("/:paymentId/refund", asyncHandler(payment.refundPayment)); // pendiente CU
   return router;
 }
-*/
-// function paymentRoutes(): Router {
-//   const router = Router();
-//   router.use(requireAuth);
-//   router.get("/:bookingId", asyncHandler(payment.getPayment));
-//   router.post("/link", asyncHandler(payment.createPaymentLink));
-//   return router;
-// }
 
 function customerRoutes(): Router {
   const router = Router();
@@ -117,7 +109,7 @@ export function createApiRouter(): Router {
   api.use("/servicios", serviceRoutes());
   api.use("/horario", scheduleRoutes(true));
   api.use("/citas", bookingRoutes());
-  // api.use("/pagos", paymentRoutes());
+  api.use("/pagos", paymentRoutes());
   api.use("/clientes", customerRoutes());
   api.post("/webhook/payment", asyncHandler(payment.paymentWebhook));
   return api;
@@ -129,7 +121,7 @@ export function createVersionedRouter(): Router {
   api.use("/services", serviceRoutes());
   api.use("/schedule", scheduleRoutes(false));
   api.use("/bookings", bookingRoutes());
-  // api.use("/payments", paymentRoutes());
+  api.use("/payments", paymentRoutes());
   api.use("/customers", customerRoutes());
   api.post("/webhook/payment", asyncHandler(payment.paymentWebhook));
   return api;
