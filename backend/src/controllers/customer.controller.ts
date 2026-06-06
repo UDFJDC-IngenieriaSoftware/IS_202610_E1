@@ -44,7 +44,35 @@ function serialize(customer: Cliente) {
   };
 }
 
+function serializeWithStats(customer: Cliente) {
+  const citas: any[] = (customer as any).citas ?? [];
+
+  const totalCitas = citas.length;
+
+  const fechas = citas
+    .map((c) => c.horario?.fecha as string | undefined)
+    .filter(Boolean) as string[];
+  const ultimaVisita = fechas.length > 0 ? [...fechas].sort().reverse()[0] : null;
+
+  const counts: Record<string, number> = {};
+  for (const cita of citas) {
+    const nombre: string | undefined = cita.horario?.servicio?.nombre;
+    if (nombre) counts[nombre] = (counts[nombre] ?? 0) + 1;
+  }
+  const servicioFrecuente =
+    Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  return {
+    ...serialize(customer),
+    totalCitas,
+    ultimaVisita,
+    servicioFrecuente,
+  };
+}
+
 export async function listCustomers(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const busqueda = req.query.busqueda as string | undefined;
+
   const customers = await Cliente.findAll({
     include: [
       {
@@ -65,11 +93,25 @@ export async function listCustomers(req: AuthenticatedRequest, res: Response): P
     ],
     order: [["nombres", "ASC"]],
   });
-  res.json(customers.map(serialize));
+
+  let result = customers.map(serializeWithStats);
+
+  if (busqueda) {
+    const q = busqueda.toLowerCase();
+    result = result.filter(
+      (c) =>
+        c.nombres.toLowerCase().includes(q) ||
+        c.apellidos.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.celular.includes(q),
+    );
+  }
+
+  res.json(result);
 }
 
 export async function getCustomer(req: AuthenticatedRequest, res: Response): Promise<void> {
-  res.json(serialize(await ownedCustomer(req)));
+  res.json(serializeWithStats(await ownedCustomer(req)));
 }
 
 export async function updateCustomer(req: AuthenticatedRequest, res: Response): Promise<void> {
