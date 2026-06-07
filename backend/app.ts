@@ -59,10 +59,10 @@ export async function startServer(): Promise<void> {
   try {
     await sequelize.authenticate();
     console.log("✅ Conexión con PostgreSQL establecida exitosamente.");
-    if (env.nodeEnv === "development") {
-      await sequelize.sync({ alter: true });
-      console.log("🔄 Tablas de la base de datos sincronizadas con éxito.");
-    }
+    // El esquema lo gestionan las migraciones (npm run migrate / make migrate).
+    // Se eliminó sequelize.sync({ alter: true }): en dev recreaba tablas con
+    // cada arranque y borraba datos (citas/pagos/notificaciones) ante cualquier
+    // cambio de modelo o reinicio por live-reload.
     dbReady = true;
   } catch (error) {
     console.error("❌ Error al conectar con PostgreSQL:", error);

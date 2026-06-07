@@ -5,6 +5,7 @@ services:
     env_file:
       - ./backend/.env.production
     environment:
+      - TZ=America/Bogota
       - PORT=3000
       - NODE_ENV=production
       - REDIS_HOST=redis
@@ -25,6 +26,8 @@ services:
     # IMPORTANTE: No mapeamos el puerto 5432:5432 hacia el host exterior para mayor seguridad.
     # Los contenedores se comunican internamente de forma privada y segura.
     environment:
+      - TZ=America/Bogota
+      - PGTZ=America/Bogota
       - POSTGRES_DB=bot_db_prod
       - POSTGRES_USER=postgres_prod
       - POSTGRES_PASSWORD=password_seguro_produccion_cambiame  # Reemplazar con contraseña robusta

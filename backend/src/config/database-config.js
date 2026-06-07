@@ -14,6 +14,7 @@ module.exports = {
     host: dbHost,
     port: dbPort,
     dialect: 'postgres',
+    timezone: '-05:00',
     define: {
       timestamps: true,
       underscored: true
@@ -26,6 +27,7 @@ module.exports = {
     host: dbHost,
     port: dbPort,
     dialect: 'postgres',
+    timezone: '-05:00',
     define: {
       timestamps: true,
       underscored: true
@@ -38,6 +40,7 @@ module.exports = {
     host: dbHost,
     port: dbPort,
     dialect: 'postgres',
+    timezone: '-05:00',
     define: {
       timestamps: true,
       underscored: true
