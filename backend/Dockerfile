@@ -29,5 +29,10 @@ RUN npm run build
 # Exponer el puerto del backend
 EXPOSE 3000
 
+# El entrypoint aplica migraciones pendientes antes de arrancar (dev y prod).
+# Se invoca con "sh" para no depender del bit de ejecución (relevante con el
+# bind-mount de ./backend en desarrollo).
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
+
 # Iniciar la aplicación en modo desarrollo por defecto (sobrescribible en docker-compose.prod.yml)
 CMD ["npm", "run", "dev"]

@@ -3,6 +3,7 @@ import * as qrcode from "qrcode-terminal";
 import * as fs from "fs";
 import * as path from "path";
 import { BaseWhatsAppService } from "./whatsapp.interface";
+import { buildMainMenu } from "./utils/bot-messages";
 
 export class WhatsAppLocalService extends BaseWhatsAppService {
   private client: any = null;
@@ -98,14 +99,6 @@ export class WhatsAppLocalService extends BaseWhatsAppService {
 
   // ─── Enviar menú interactivo (texto formateado) ───────────────
   public async sendMenu(to: string): Promise<any> {
-    const menuText = `
-🤖 *Asistente Virtual*
-¿En qué puedo ayudarte hoy?
-
-1️⃣ 🕐 Lista de Barberos
-2 🕐 Lista de servicios
-    `.trim();
-
-    return this.sendText(to, menuText);
+    return this.sendText(to, buildMainMenu());
   }
 }
