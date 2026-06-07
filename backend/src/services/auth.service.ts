@@ -103,6 +103,11 @@ export function toProfile(user: Barbero) {
     barberia: user.barberia || nombre,
     ciudad: user.ciudad || "",
     inicial: `${user.nombres.charAt(0)}${user.apellidos.charAt(0)}`.toUpperCase(),
+    plazoCancelacion: user.plazoCancelacion ?? null,
+    plazoReprogramacion: user.plazoReprogramacion ?? null,
+    mensajeBienvenida: user.mensajeBienvenida ?? null,
+    mensajeConfirmacion: user.mensajeConfirmacion ?? null,
+    mensajeRecordatorio: user.mensajeRecordatorio ?? null,
   };
 }
 

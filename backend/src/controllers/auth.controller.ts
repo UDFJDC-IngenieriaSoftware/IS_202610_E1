@@ -87,6 +87,21 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response): P
     barberia: optionalString(body.barberia) ?? user.barberia,
     ciudad: optionalString(body.ciudad) ?? user.ciudad,
     direccion: optionalString(body.direccion) ?? user.direccion,
+    plazoCancelacion: body.plazoCancelacion !== undefined
+      ? (body.plazoCancelacion === null ? null : Number(body.plazoCancelacion))
+      : user.plazoCancelacion,
+    plazoReprogramacion: body.plazoReprogramacion !== undefined
+      ? (body.plazoReprogramacion === null ? null : Number(body.plazoReprogramacion))
+      : user.plazoReprogramacion,
+    mensajeBienvenida: body.mensajeBienvenida !== undefined
+      ? (optionalString(body.mensajeBienvenida) ?? null)
+      : user.mensajeBienvenida,
+    mensajeConfirmacion: body.mensajeConfirmacion !== undefined
+      ? (optionalString(body.mensajeConfirmacion) ?? null)
+      : user.mensajeConfirmacion,
+    mensajeRecordatorio: body.mensajeRecordatorio !== undefined
+      ? (optionalString(body.mensajeRecordatorio) ?? null)
+      : user.mensajeRecordatorio,
   });
   res.json(toProfile(user));
 }
