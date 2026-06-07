@@ -12,6 +12,7 @@ export type IconName =
   | 'content_cut'
   | 'schedule'
   | 'history'
+  | 'policy'
   // Navegación admin
   | 'admin_panel_settings'
   | 'group'
@@ -22,6 +23,7 @@ export type IconName =
   // Acciones generales
   | 'add'
   | 'edit'
+  | 'save'
   | 'delete'
   | 'close'
   | 'check'
