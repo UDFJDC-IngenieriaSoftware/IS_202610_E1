@@ -17,7 +17,7 @@ function setSessionCookie(res: Response, token: string): void {
   res.cookie(env.cookieName, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: env.nodeEnv === "production",
+    secure: env.cookieSecure,
     maxAge: env.jwtExpiresSeconds * 1000,
     path: "/",
   });

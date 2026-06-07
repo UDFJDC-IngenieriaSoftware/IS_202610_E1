@@ -18,6 +18,7 @@ export const env = {
     "development-only-secret-change-before-production-123456",
   jwtExpiresSeconds: numberValue(process.env.JWT_EXPIRES_SECONDS, 7 * 24 * 60 * 60),
   cookieName: process.env.SESSION_COOKIE_NAME || "miturno_session",
+  cookieSecure: process.env.COOKIE_SECURE !== "false" && nodeEnv === "production",
   enableWhatsappLocal: process.env.ENABLE_WHATSAPP_LOCAL === "true",
   rateLimitWindowMs: numberValue(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
   rateLimitMax: numberValue(process.env.RATE_LIMIT_MAX_REQUESTS, 100),
