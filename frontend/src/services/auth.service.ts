@@ -8,6 +8,11 @@ const BARBER_MOCK: BarberoPerfil = {
   barberia: 'Estudio Barbería · Andrés',
   ciudad: 'Medellín',
   inicial: 'AM',
+  plazoCancelacion: null,
+  plazoReprogramacion: null,
+  mensajeBienvenida: null,
+  mensajeConfirmacion: null,
+  mensajeRecordatorio: null,
 }
 
 export interface LoginPayload {
