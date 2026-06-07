@@ -148,12 +148,38 @@ test.describe('CU-08 · Agenda', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 2_000 })
   })
 
-  // ── Gaps documentados ────────────────────────────────────────────────────
-  // eslint-disable-next-line playwright/no-skipped-test
-  test.skip('CU-08 · vista "Día" — no implementada en AgendaPage', () => {
-    // AgendaPage define type VistaAgenda = \'semana\' | \'mes\'.
-    // No existe botón "Día" ni lógica de vista diaria.
-    // El toggle solo muestra Semana / Mes.
-    // Pendiente según CU-08 paso 3 del plan de verificación.
+  // ── Vista día ────────────────────────────────────────────────────────────
+
+  test('CU-08 · vista "Día" muestra columna única con el día actual', async ({ page }) => {
+    const btnDia = page.locator('[role="group"][aria-label="Vista de agenda"] button', { hasText: 'Día' })
+    await btnDia.click()
+
+    // La grilla de día debe mostrarse (cal-grid--day o cal-grid con 1 gridcell)
+    await expect(page.locator('div.cal-grid')).toBeVisible({ timeout: 3_000 })
+    const columnas = page.locator('[role="gridcell"]')
+    await expect(columnas).toHaveCount(1)
+
+    // El header muestra el nombre y número del día
+    await expect(page.locator('.cal-dayhead .cdh-day')).toBeVisible()
+    await expect(page.locator('.cal-dayhead .cdh-num')).toBeVisible()
+
+    // El botón Día debe tener aria-pressed=true
+    await expect(btnDia).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('CU-08 · navegación día: avanza y retrocede con botones', async ({ page }) => {
+    // Ir a vista día
+    await page.locator('[role="group"][aria-label="Vista de agenda"] button', { hasText: 'Día' }).click()
+    await expect(page.locator('div.cal-grid')).toBeVisible()
+
+    const subtitle = page.locator('.topbar-sub')
+    const textoInicial = await subtitle.textContent()
+
+    await page.locator('button[aria-label="Día siguiente"]').click()
+    const textoNuevo = await subtitle.textContent()
+    expect(textoNuevo).not.toEqual(textoInicial)
+
+    await page.locator('button[aria-label="Día anterior"]').click()
+    await expect(subtitle).toHaveText(textoInicial ?? '', { timeout: 3_000 })
   })
 })
