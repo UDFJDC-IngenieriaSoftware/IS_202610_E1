@@ -5,6 +5,7 @@ services:
     env_file:
       - ./backend/.env.development
     environment:
+      - TZ=America/Bogota
       - PORT=3000
       - NODE_ENV=development
       - DB_HOST=database
@@ -26,6 +27,8 @@ services:
     ports:
       - "5433:5432" # Evita colision con otros PostgreSQL locales
     environment:
+      - TZ=America/Bogota
+      - PGTZ=America/Bogota
       - POSTGRES_DB=bot_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres_password

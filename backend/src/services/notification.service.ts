@@ -65,9 +65,12 @@ export class NotificationService {
     try {
       const message = this.getCancellationTemplate(context);
       await this.whatsapp.sendText(context.customerPhone, message);
-      logger.info(`Cancellation notification sent to ${context.customerPhone}`, {
-        bookingId: context.bookingId,
-      });
+      logger.info(
+        `Cancellation notification sent to ${context.customerPhone}`,
+        {
+          bookingId: context.bookingId,
+        },
+      );
     } catch (error) {
       logger.error(`Failed to send cancellation notification`, {
         bookingId: context.bookingId,
@@ -87,8 +90,7 @@ Tu cita ha sido confirmada:
 📅 Fecha y hora: ${context.dateTime}
 
 Te esperamos. En caso de duda, responde a este mensaje.
-
-#${context.bookingId}`;
+`;
   }
 
   private getReminder24hTemplate(context: NotificationContext): string {
@@ -101,8 +103,7 @@ Te recordamos que tienes una cita mañana:
 📅 Hora: ${context.dateTime}
 
 Si no puedes asistir, por favor cancela aquí para que otro cliente pueda agendar.
-
-#${context.bookingId}`;
+`;
   }
 
   private getReminder2hTemplate(context: NotificationContext): string {
@@ -115,8 +116,7 @@ Te recordamos que tu cita es en 2 horas:
 📅 Hora: ${context.dateTime}
 
 Te esperamos en la barbería.
-
-#${context.bookingId}`;
+`;
   }
 
   private getCancellationTemplate(context: NotificationContext): string {
@@ -129,8 +129,7 @@ Tu cita ha sido cancelada:
 📅 Fecha y hora que fue: ${context.dateTime}
 
 Si fue por error, contacta con nosotros para reagendar.
-
-#${context.bookingId}`;
+`;
   }
 }
 

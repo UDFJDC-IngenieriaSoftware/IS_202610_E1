@@ -16,6 +16,8 @@ interface BookingRow {
   reminder_2h_sent: boolean;
   reminder_24h_retries: number;
   reminder_2h_retries: number;
+  due_24h: boolean;
+  due_2h: boolean;
 }
 
 export class ReminderJob {
@@ -59,7 +61,17 @@ export class ReminderJob {
           c.reminder_24h_sent,
           c.reminder_2h_sent,
           COALESCE(c.reminder_24h_retries, 0) AS reminder_24h_retries,
-          COALESCE(c.reminder_2h_retries,  0) AS reminder_2h_retries
+          COALESCE(c.reminder_2h_retries,  0) AS reminder_2h_retries,
+          (
+            c.reminder_24h_sent = false
+            AND COALESCE(c.reminder_24h_retries, 0) < ${MAX_RETRIES}
+            AND EXTRACT(EPOCH FROM ((h.fecha + h.hora_inicio)::timestamptz - NOW())) BETWEEN 82800 AND 88200
+          ) AS due_24h,
+          (
+            c.reminder_2h_sent = false
+            AND COALESCE(c.reminder_2h_retries, 0) < ${MAX_RETRIES}
+            AND EXTRACT(EPOCH FROM ((h.fecha + h.hora_inicio)::timestamptz - NOW())) BETWEEN 6300 AND 7500
+          ) AS due_2h
         FROM citas c
         JOIN horarios h ON c.id_horario = h.id
         JOIN clientes cl ON c.id_cliente = cl.id
@@ -83,6 +95,8 @@ export class ReminderJob {
         { type: sequelize.QueryTypes.SELECT },
       );
 
+      logger.info(`bookings ${bookings}`);
+
       for (const booking of bookings as BookingRow[]) {
         const context = {
           customerName: booking.customer_name,
@@ -93,27 +107,23 @@ export class ReminderJob {
           bookingId: booking.id as any,
         };
 
-        if (!booking.reminder_24h_sent) {
-          await this.sendWithRetry(
-            sequelize,
-            booking,
-            "24h",
-            () => notificationService.sendReminder24h(context),
+        if (booking.due_24h) {
+          await this.sendWithRetry(sequelize, booking, "24h", () =>
+            notificationService.sendReminder24h(context),
           );
         }
 
-        if (!booking.reminder_2h_sent) {
-          await this.sendWithRetry(
-            sequelize,
-            booking,
-            "2h",
-            () => notificationService.sendReminder2h(context),
+        if (booking.due_2h) {
+          await this.sendWithRetry(sequelize, booking, "2h", () =>
+            notificationService.sendReminder2h(context),
           );
         }
       }
 
       if ((bookings as BookingRow[]).length > 0) {
-        logger.info(`Processed ${(bookings as BookingRow[]).length} booking reminders`);
+        logger.info(
+          `Processed ${(bookings as BookingRow[]).length} booking reminders`,
+        );
       }
     } catch (error) {
       logger.error("Error in processReminders", { error: String(error) });
@@ -127,25 +137,29 @@ export class ReminderJob {
     tipo: "24h" | "2h",
     send: () => Promise<void>,
   ): Promise<void> {
-    const sentCol     = tipo === "24h" ? "reminder_24h_sent"    : "reminder_2h_sent";
-    const retriesCol  = tipo === "24h" ? "reminder_24h_retries" : "reminder_2h_retries";
+    const sentCol = tipo === "24h" ? "reminder_24h_sent" : "reminder_2h_sent";
+    const retriesCol =
+      tipo === "24h" ? "reminder_24h_retries" : "reminder_2h_retries";
     const currentRetries =
-      tipo === "24h" ? booking.reminder_24h_retries : booking.reminder_2h_retries;
+      tipo === "24h"
+        ? booking.reminder_24h_retries
+        : booking.reminder_2h_retries;
 
     try {
       await send();
 
       // Éxito: marcar como enviado y persistir en Notificacion
-      await sequelize.query(
-        `UPDATE citas SET ${sentCol} = true WHERE id = ?`,
-        { replacements: [booking.id] },
-      );
+      await sequelize.query(`UPDATE citas SET ${sentCol} = true WHERE id = ?`, {
+        replacements: [booking.id],
+      });
       await Notificacion.create({
         mensaje: `Recordatorio ${tipo} enviado`,
         tipo: `recordatorio_${tipo}`,
         idCita: booking.id,
       });
-      logger.info(`${tipo} reminder sent and persisted`, { bookingId: booking.id });
+      logger.info(`${tipo} reminder sent and persisted`, {
+        bookingId: booking.id,
+      });
     } catch (error) {
       const newRetries = currentRetries + 1;
 
@@ -165,9 +179,12 @@ export class ReminderJob {
           `UPDATE citas SET ${retriesCol} = ? WHERE id = ?`,
           { replacements: [newRetries, booking.id] },
         );
-        logger.warn(`${tipo} reminder failed, will retry (attempt ${newRetries})`, {
-          bookingId: booking.id,
-        });
+        logger.warn(
+          `${tipo} reminder failed, will retry (attempt ${newRetries})`,
+          {
+            bookingId: booking.id,
+          },
+        );
       }
 
       // Persiste el error para trazabilidad
