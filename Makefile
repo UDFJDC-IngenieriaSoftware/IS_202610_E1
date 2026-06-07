@@ -1,6 +1,11 @@
 DEV  = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
+# Despliegue remoto (EC2). Sobreescribibles: make deploy SSH_HOST=otro
+SSH_HOST   ?= miturno
+REMOTE_DIR ?= ~/miturno
+NGINX_CONTAINER ?= whatsapp_bot_nginx
+
 # ──────────────────────────────────────────────
 #  Desarrollo
 # ──────────────────────────────────────────────
@@ -105,9 +110,52 @@ test-bot:
 tunnel:
 	cloudflared tunnel --url http://localhost:80
 
+# ──────────────────────────────────────────────────────────────────
+#  Despliegue al EC2 (desde tu máquina local)
+#  Prerrequisitos: la instancia encendida y el Host "$(SSH_HOST)" en
+#  ~/.ssh/config apuntando a su IP pública actual (ver .local-docs/DEPLOY.md).
+#  Las migraciones corren solas al arrancar el backend (docker-entrypoint.sh).
+# ──────────────────────────────────────────────────────────────────
+deploy: deploy-check deploy-sync deploy-build deploy-restart-nginx
+	@echo "✅ Despliegue completado en $(SSH_HOST)."
+	@echo "   Verifica:  curl -s http://<IP>/api/   (404 del backend = vivo)"
+
+# Falla temprano y claro si no hay conexión SSH al host.
+deploy-check:
+	@echo "🔌 Verificando conexión SSH a $(SSH_HOST)..."
+	@ssh -o ConnectTimeout=10 $(SSH_HOST) "uptime" >/dev/null 2>&1 || \
+		{ echo "❌ No hay conexión SSH a '$(SSH_HOST)'. ¿Instancia encendida y la IP del ~/.ssh/config actualizada? (ver DEPLOY.md)"; exit 1; }
+
+# Sincroniza el código local → host (igual que el runbook).
+deploy-sync:
+	@echo "📦 Sincronizando código → $(SSH_HOST):$(REMOTE_DIR) ..."
+	rsync -az --delete \
+		--exclude='.git' \
+		--exclude='node_modules' \
+		--exclude='backend/dist' \
+		--exclude='frontend/dist' \
+		--exclude='frontend/node_modules' \
+		--exclude='*.pem' \
+		-e ssh ./ $(SSH_HOST):$(REMOTE_DIR)/
+
+# Reconstruye imágenes y levanta el stack en el host.
+deploy-build:
+	@echo "🛠️  Construyendo y levantando el stack en $(SSH_HOST) ..."
+	ssh $(SSH_HOST) "cd $(REMOTE_DIR) && make prod-build"
+
+# Reinicia nginx para evitar el 502 tras recrear backend/frontend.
+deploy-restart-nginx:
+	@echo "🔄 Reiniciando nginx ($(NGINX_CONTAINER)) ..."
+	ssh $(SSH_HOST) "docker restart $(NGINX_CONTAINER)"
+
+# Logs del backend remoto (follow), p.ej. para escanear el QR de WhatsApp.
+deploy-logs:
+	ssh $(SSH_HOST) "docker logs -f mi_turno_backend"
+
 .PHONY: dev dev-build dev-down dev-reset \
         prod prod-build prod-down \
         ps logs logs-backend logs-db logs-nginx \
         shell-backend shell-db shell-redis \
         migrate migrate-undo seed seed-undo db-reset fresh-start \
-        test-bot tunnel
+        test-bot tunnel \
+        deploy deploy-check deploy-sync deploy-build deploy-restart-nginx deploy-logs
