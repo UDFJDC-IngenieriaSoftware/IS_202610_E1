@@ -17,7 +17,10 @@ services:
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
     volumes:
       - ./backend:/app # Habilita live-reload (monta código local al contenedor)
-      - /app/node_modules # Evita que se sobrescriban las dependencias del host
+      # node_modules con nombre (no anónimo) para que el target `deps` del Makefile
+      # pueda sincronizarlo vía un contenedor efímero `compose run` que comparte
+      # este mismo volumen. Evita errores tipo "Cannot find module" al agregar deps.
+      - backend_node_modules:/app/node_modules
     ports:
       - "3000:3000" # Acceso directo al backend si se desea
 
@@ -79,4 +82,6 @@ services:
 # ─── VOLUMES CONFIGURATION (Dev Only) ─────────────────────────────────────
 volumes:
   pgadmin_data:
+    driver: local
+  backend_node_modules:
     driver: local

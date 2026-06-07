@@ -9,11 +9,22 @@ NGINX_CONTAINER ?= whatsapp_bot_nginx
 # ──────────────────────────────────────────────
 #  Desarrollo
 # ──────────────────────────────────────────────
-dev:
+# Sincroniza node_modules del backend con package.json.
+# Evita errores tipo "Cannot find module 'X'" cuando se agrega una dependencia
+# nueva y el volumen de node_modules del contenedor quedó desactualizado.
+# Corre en un contenedor efímero que comparte el volumen `backend_node_modules`
+# con el backend real, así funciona incluso si el backend está caído.
+deps:
+	@echo "🔄 Sincronizando dependencias del backend (package.json ↔ node_modules)..."
+	$(DEV) run --rm --no-deps --entrypoint sh backend -c "npm install --no-audit --no-fund"
+
+dev: deps
 	$(DEV) up -d
 
 dev-build:
-	$(DEV) up -d --build
+	$(DEV) build
+	@$(MAKE) deps
+	$(DEV) up -d
 
 dev-down:
 	$(DEV) down
@@ -90,6 +101,7 @@ db-reset:
 # Destruye volúmenes, levanta todo desde cero y corre migraciones + seeders
 fresh-start:
 	$(DEV) down -v
+	@$(MAKE) deps
 	$(DEV) up -d
 	@echo "Esperando que la base de datos esté lista..."
 	@until docker exec mi_turno_database pg_isready -U postgres -q; do sleep 1; done
@@ -152,7 +164,7 @@ deploy-restart-nginx:
 deploy-logs:
 	ssh $(SSH_HOST) "docker logs -f mi_turno_backend"
 
-.PHONY: dev dev-build dev-down dev-reset \
+.PHONY: deps dev dev-build dev-down dev-reset \
         prod prod-build prod-down \
         ps logs logs-backend logs-db logs-nginx \
         shell-backend shell-db shell-redis \
