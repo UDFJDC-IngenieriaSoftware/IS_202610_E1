@@ -33,6 +33,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: mi_turno_frontend
+    restart: unless-stopped
     depends_on:
       - backend
 
