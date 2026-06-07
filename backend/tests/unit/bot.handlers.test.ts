@@ -14,6 +14,7 @@ const mockListForCliente  = jest.fn()
 const mockUpdateStatus    = jest.fn()
 const mockReschedule      = jest.fn()
 const mockCreatePaymentLink = jest.fn()
+const mockBarberoFindByPk = jest.fn()
 
 jest.mock('../../src/services/barber.service', () => ({
   BarberService: jest.fn(() => ({
@@ -61,7 +62,7 @@ jest.mock('../../src/services/session.service', () => ({
 jest.mock('../../src/models', () => ({
   Servicio: jest.fn(),
   Cliente: jest.fn(),
-  Barbero: jest.fn(),
+  Barbero: { findByPk: mockBarberoFindByPk },
   Horario: jest.fn(),
   Cita: jest.fn(),
   Pago: jest.fn(),
@@ -483,7 +484,10 @@ describe('handleListCitas (CU-05)', () => {
 // ─── CU-05: CANCEL_CONFIRM ────────────────────────────────────────────────────
 
 describe('handleCancelConfirm (CU-05)', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockBarberoFindByPk.mockResolvedValue({ plazoCancelacion: null, plazoReprogramacion: null })
+  })
 
   it('input "1" with future cita (+48h) cancels successfully', async () => {
     mockUpdateStatus.mockResolvedValue({})
