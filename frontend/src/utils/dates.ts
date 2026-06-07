@@ -10,8 +10,11 @@
  * Fecha de hoy en formato ISO yyyy-mm-dd.
  * Cambia VITE_TODAY en .env para sobreescribir en desarrollo.
  */
+const _envToday = import.meta.env.VITE_TODAY
 export const HOY_ISO: string =
-  import.meta.env.VITE_TODAY ?? new Date().toISOString().slice(0, 10)
+  (_envToday && /^\d{4}-\d{2}-\d{2}$/.test(_envToday))
+    ? _envToday
+    : new Date().toISOString().slice(0, 10)
 
 // ── Parsing ───────────────────────────────────────────────────────────────────
 
@@ -66,6 +69,7 @@ const DIA_ABBR = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] as const
  */
 export function buildWeek(isoRef: string): DiaInfo[] {
   const ref = new Date(isoRef + 'T12:00:00')
+  if (isNaN(ref.getTime())) return buildWeek(new Date().toISOString().slice(0, 10))
   // ajustar al lunes de esa semana
   const dayOfWeek = ref.getDay() // 0 = domingo
   const distToMonday = (dayOfWeek + 6) % 7   // lunes = 0
@@ -100,6 +104,7 @@ export interface CeldaMes {
  */
 export function buildMonthGrid(isoRef: string): CeldaMes[] {
   const ref = new Date(isoRef + 'T12:00:00')
+  if (isNaN(ref.getTime())) return buildMonthGrid(new Date().toISOString().slice(0, 10))
   const year = ref.getFullYear()
   const month = ref.getMonth()
 
@@ -140,6 +145,7 @@ export function buildMonthGrid(isoRef: string): CeldaMes[] {
  */
 export function addDays(iso: string, n: number): string {
   const d = new Date(iso + 'T12:00:00')
+  if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 10)
   d.setDate(d.getDate() + n)
   return d.toISOString().slice(0, 10)
 }
