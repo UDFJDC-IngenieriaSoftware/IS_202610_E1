@@ -1,5 +1,5 @@
 import { BotState, UserSession } from "./bot.types";
-import { Servicio } from "../models";
+import { Servicio, Barbero } from "../models";
 import { ProcedureService } from "../services/procedure.service";
 import { BarberService } from "../services/barber.service";
 import { AvailabilityService, fromMinutes } from "../services/availability.service";
@@ -388,18 +388,19 @@ async function handleCancelConfirm(session: UserSession, input: string): Promise
   }
 
   if (input === "1") {
-    // CU-05: validar política de 24 horas
     const horario = cita.horario;
     const apptDate = new Date(`${horario.fecha}T${horario.horaInicio.slice(0, 5)}:00`);
     const diffHours = (apptDate.getTime() - Date.now()) / 3_600_000;
 
-    if (diffHours < 24) {
+    const idBarbero = cita.horario.servicio.idBarbero;
+    const barberoCancel = await Barbero.findByPk(idBarbero);
+    const plazo = barberoCancel?.plazoCancelacion ?? 24;
+    if (diffHours < plazo) {
       session.estadoActual = BotState.INICIO;
-      return `❌ No es posible cancelar con menos de 24 horas de anticipación. Tu cita se mantiene.\n\n${MENU_TEXT}`;
+      return `❌ No es posible cancelar con menos de ${plazo} horas de anticipación. Tu cita se mantiene.\n\n${MENU_TEXT}`;
     }
 
     try {
-      const idBarbero = cita.horario.servicio.idBarbero;
       await bookingService.updateStatus(cita.id, idBarbero, "cancelada");
       session.estadoActual = BotState.INICIO;
       session.datosTemporales = {};
@@ -412,6 +413,16 @@ async function handleCancelConfirm(session: UserSession, input: string): Promise
 
   if (input === "2") {
     const procedure = cita.horario.servicio;
+    const horarioRepo = cita.horario;
+    const apptDateRepo = new Date(`${horarioRepo.fecha}T${horarioRepo.horaInicio.slice(0, 5)}:00`);
+    const diffHoursRepo = (apptDateRepo.getTime() - Date.now()) / 3_600_000;
+    const barberoRepo = await Barbero.findByPk(procedure.idBarbero);
+    const plazoRepo = barberoRepo?.plazoReprogramacion ?? 24;
+    if (diffHoursRepo < plazoRepo) {
+      session.estadoActual = BotState.INICIO;
+      return `❌ No es posible reprogramar con menos de ${plazoRepo} horas de anticipación.\n\n${MENU_TEXT}`;
+    }
+
     const dates = await generateAvailableDates(procedure.idBarbero, procedure.duracion);
     if (!dates.length) {
       session.estadoActual = BotState.INICIO;

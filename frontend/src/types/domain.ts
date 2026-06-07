@@ -13,6 +13,11 @@ export interface BarberoPerfil {
   readonly barberia: string
   readonly ciudad: string
   readonly inicial: string
+  readonly plazoCancelacion: number | null
+  readonly plazoReprogramacion: number | null
+  readonly mensajeBienvenida: string | null
+  readonly mensajeConfirmacion: string | null
+  readonly mensajeRecordatorio: string | null
 }
 
 // ── Cita ─────────────────────────────────────────────────────────────────────

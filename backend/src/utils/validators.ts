@@ -116,7 +116,8 @@ export const customerSchemas = {
     email: z.string().email().optional(),
   }),
   update: z.object({
-    name: z.string().min(2).optional(),
-    email: z.string().email().optional(),
+    nombres:   z.string().min(1).optional(),
+    apellidos: z.string().optional(),
+    email:     z.string().email().optional(),
   }),
 };

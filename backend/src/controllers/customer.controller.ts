@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { Cita, Cliente, Horario, Servicio } from "../models";
@@ -123,4 +124,29 @@ export async function updateCustomer(req: AuthenticatedRequest, res: Response): 
     celular: optionalString(req.body?.celular) || customer.celular,
   });
   res.json(serialize(customer));
+}
+
+export async function deleteCustomer(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const customer = await ownedCustomer(req);
+
+  // Verificar que no tenga citas futuras confirmadas o pendientes
+  const hoy = new Date().toISOString().split("T")[0];
+  const citasFuturas = await Cita.count({
+    where: { idCliente: customer.id, estado: ["confirmada", "pendiente"] },
+    include: [
+      {
+        model: Horario,
+        as: "horario",
+        required: true,
+        where: { fecha: { [Op.gte]: hoy } },
+      },
+    ],
+  });
+
+  if (citasFuturas > 0) {
+    throw new HttpError(409, `El cliente tiene ${citasFuturas} cita(s) pendiente(s) o confirmada(s). Cancélalas antes de eliminar.`);
+  }
+
+  await customer.destroy();
+  res.status(204).send();
 }

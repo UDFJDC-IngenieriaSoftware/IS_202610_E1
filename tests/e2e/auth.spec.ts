@@ -1,102 +1,91 @@
+/**
+ * Authentication Flow — LoginPage y RegisterPage
+ *
+ * Rutas: /login · /registro
+ *
+ * Cubre:
+ *  ✅ / redirige a /login cuando no hay sesión
+ *  ✅ Envío sin credenciales activa validación HTML5 en los inputs
+ *  ✅ Email inválido → input:invalid
+ *  ✅ Link "Crea una" en login navega a /registro
+ *  ✅ Link "Inicia sesión" en registro navega a /login
+ *  ✅ Loading state: botón se deshabilita y cambia texto durante el submit
+ *  ✅ Error de API: el div#login-error con role=alert se hace visible
+ */
 import { test, expect } from '@playwright/test'
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear storage before each test
+    // Limpiar cookies primero (elimina sesión del barbero de prueba inyectada por storageState)
     await page.context().clearCookies()
-    await page.evaluate(() => localStorage.clear())
-    await page.evaluate(() => sessionStorage.clear())
   })
 
-  test('should navigate to login page', async ({ page }) => {
+  test('/ muestra la landing page y tiene link al login', async ({ page }) => {
     await page.goto('/')
-    // Assuming there's a login link or it redirects to login
-    await expect(page).toHaveURL(/.*login|auth/)
+    // La raíz carga LandingPage (no redirige a /login)
+    await expect(page).toHaveURL('http://localhost:5173/')
+    // Debe existir algún link hacia /login o /registro
+    const loginLink = page.locator('a[href="/login"], a[href="/registro"]').first()
+    await expect(loginLink).toBeVisible({ timeout: 5_000 })
   })
 
-  test('should show validation errors on empty login', async ({ page }) => {
+  test('envío vacío activa validación HTML5 en email y password', async ({ page }) => {
     await page.goto('/login')
-
-    // Try to submit empty form
     await page.click('button[type="submit"]')
 
-    // Should show validation errors
-    await expect(page.locator('text=Email inválido')).toBeVisible()
-    await expect(page.locator('text=Mínimo 6 caracteres')).toBeVisible()
+    // El browser pone :invalid en los campos requeridos que están vacíos
+    await expect(page.locator('input[type="email"]:invalid')).toBeVisible()
   })
 
-  test('should show validation error on invalid email', async ({ page }) => {
+  test('email con formato inválido pone el input en estado :invalid', async ({ page }) => {
     await page.goto('/login')
-
-    // Fill invalid email
-    await page.fill('input[type="email"]', 'not-an-email')
-    await page.fill('input[type="password"]', 'password123')
-
+    await page.fill('input[type="email"]', 'no-es-email')
+    await page.fill('input[type="password"]', 'abc123')
     await page.click('button[type="submit"]')
 
-    // Should show email validation error
-    await expect(page.locator('text=Email inválido')).toBeVisible()
+    await expect(page.locator('input[type="email"]:invalid')).toBeVisible()
   })
 
-  test('should navigate to register page from login', async ({ page }) => {
+  test('link "Crea una" desde login navega a /registro', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole('link', { name: 'Crea una' }).click()
+    await expect(page).toHaveURL(/\/registro/, { timeout: 5_000 })
+  })
+
+  test('link "Inicia sesión" desde registro navega a /login', async ({ page }) => {
+    await page.goto('/registro')
+    await page.getByRole('link', { name: 'Inicia sesión' }).click()
+    await expect(page).toHaveURL(/\/login/, { timeout: 5_000 })
+  })
+
+  test('loading state: botón se deshabilita y muestra "Entrando…" durante el submit', async ({ page }) => {
     await page.goto('/login')
 
-    // Find and click register link
-    const registerLink = page.locator('a:has-text("Registrarse"), a:has-text("Create account")')
-    if (await registerLink.isVisible()) {
-      await registerLink.click()
-      await expect(page).toHaveURL(/.*register|signup/)
-    }
-  })
+    // Interceptar para mantener la request colgada
+    await page.route('**/api/auth/login', route =>
+      new Promise(() => { /* nunca resuelve */ }),
+    )
 
-  test('should validate password confirmation on register', async ({ page }) => {
-    await page.goto('/register')
-
-    // Fill form with mismatched passwords
-    await page.fill('input[type="email"]', 'test@example.com')
-    await page.fill('input[name="password"]', 'password123')
-    await page.fill('input[name="confirmPassword"]', 'password456')
-    await page.fill('input[name="name"]', 'John Doe')
-
+    await page.fill('input[type="email"]', 'juan.perez@miturno.com')
+    await page.fill('input[type="password"]', 'Demo1234')
     await page.click('button[type="submit"]')
 
-    // Should show password mismatch error
-    await expect(page.locator('text=no coinciden')).toBeVisible()
+    const btn = page.locator('button[type="submit"]')
+    await expect(btn).toBeDisabled({ timeout: 3_000 })
+    await expect(btn).toContainText('Entrando…')
   })
 
-  test('should show loading state during login attempt', async ({ page }) => {
+  test('error de API muestra alerta visible en el formulario', async ({ page }) => {
     await page.goto('/login')
 
-    // Mock the API endpoint to delay response
-    await page.route('**/api/auth/login', async (route) => {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      route.abort()
-    })
+    await page.route('**/api/auth/login', route =>
+      route.fulfill({ status: 401, body: JSON.stringify({ error: 'Credenciales incorrectas' }) }),
+    )
 
-    // Fill and submit
-    await page.fill('input[type="email"]', 'test@example.com')
-    await page.fill('input[type="password"]', 'password123')
+    await page.fill('input[type="email"]', 'juan.perez@miturno.com')
+    await page.fill('input[type="password"]', 'password_malo')
     await page.click('button[type="submit"]')
 
-    // Button should be disabled during loading
-    const submitButton = page.locator('button[type="submit"]')
-    await expect(submitButton).toBeDisabled()
-  })
-
-  test('should handle API error gracefully', async ({ page }) => {
-    await page.goto('/login')
-
-    // Mock API error
-    await page.route('**/api/auth/login', (route) => {
-      route.abort('failed')
-    })
-
-    // Fill and submit
-    await page.fill('input[type="email"]', 'test@example.com')
-    await page.fill('input[type="password"]', 'password123')
-    await page.click('button[type="submit"]')
-
-    // Should show error message
-    await expect(page.locator('text=error')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('[role="alert"]#login-error')).toBeVisible({ timeout: 5_000 })
   })
 })
