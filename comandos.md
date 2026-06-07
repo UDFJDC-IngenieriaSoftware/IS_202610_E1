@@ -59,6 +59,16 @@ En producción se cargan las variables de `./backend/.env.production`, no se exp
     docker compose -f docker-compose.yml -f docker-compose.prod.yml down
     ```
 
+> [!IMPORTANT]
+> **Cambiaste el contenido de `backend/.env.production`?** Un `up -d backend` normal **NO** recrea el contenedor (Docker Compose mira el archivo compose, no el contenido del `env_file`), así que seguiría con las variables viejas. Fuerza la recreación:
+> ```bash
+> docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate backend
+> ```
+> En cambio, si cambiaste **código** del backend, hay que reconstruir la imagen (`make prod-build`): en producción no hay *bind-mount*, el código va horneado en la imagen.
+
+> [!NOTE]
+> La zona horaria del stack está fijada en `America/Bogota` (`TZ`/`PGTZ` en los compose + hook `SET TIME ZONE` en `database.ts`). Esto evita el desfase de 5h en los recordatorios de citas (`NOW()` y los casts `::timestamptz` operan en hora local).
+
 ---
 
 ### 📦 1.3 Gestión de un solo contenedor/servicio específico
@@ -125,7 +135,8 @@ docker compose logs -f nginx
 
 | Servicio | URL / Host | Puerto Externo | Credenciales / Detalles |
 | :--- | :--- | :--- | :--- |
-| **Nginx (Proxy)** | `http://localhost` | `80` | Proxy inverso principal. |
+| **Nginx (Proxy)** | `http://localhost` | `80` | Proxy inverso principal (enruta `/api/` → backend y `/` → frontend). |
+| **Frontend (Vite dev)** | `http://localhost:5173` | `5173` | Dev server del SPA (solo en desarrollo). |
 | **Backend (Node.js)** | `http://localhost:3000` | `3000` | Puerto directo del backend. |
 | **PostgreSQL** | `localhost` | `5432` | **DB:** `bot_db` <br> **User:** `postgres` <br> **Password:** `postgres_password` |
 | **pgAdmin** | `http://localhost:5050` | `5050` | **Email:** `admin@admin.com` <br> **Password:** `admin` |
@@ -138,14 +149,14 @@ docker compose logs -f nginx
 ### Conectarse a la Base de Datos PostgreSQL (Terminal)
 Puedes ingresar directamente a la consola interactiva de PostgreSQL dentro del contenedor usando `psql`:
 ```bash
-docker exec -it whatsapp_bot_database psql -U postgres -d bot_db
+docker exec -it mi_turno_database psql -U postgres -d bot_db
 ```
 *(Dentro de la consola de postgres, puedes usar `\dt` para listar tablas o `\q` para salir).*
 
 ### Acceder al terminal del Backend (Node.js)
 Si necesitas ejecutar scripts, instalar paquetes de prueba o interactuar directamente con el sistema de archivos del backend:
 ```bash
-docker exec -it whatsapp_bot_backend sh
+docker exec -it mi_turno_backend sh
 ```
 
 ### Conectarse a Redis (Terminal)

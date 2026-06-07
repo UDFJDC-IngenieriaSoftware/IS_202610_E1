@@ -6,6 +6,7 @@ import { AvailabilityService, fromMinutes } from "../services/availability.servi
 import { BookingService } from "../services/booking.service";
 import { PaymentService } from "../services/payment.service";
 import logger from "../utils/logger";
+import { MENU_TEXT, buildMainMenu } from "../utils/bot-messages";
 
 const procedureService = new ProcedureService(new Servicio());
 const barberService = new BarberService(procedureService);
@@ -31,12 +32,6 @@ const formatDate = (fecha: string): string => {
   const [y, m, d] = fecha.split("-");
   return `${d}/${m}/${y}`;
 };
-
-const MENU_TEXT =
-  `¿Qué deseas hacer?\n` +
-  `*1.* ✂️ Agendar por barbero\n` +
-  `*2.* ✂️ Agendar por servicio\n` +
-  `*3.* 📋 Mis citas (cancelar / reprogramar)`;
 
 const renderDatesList = (dates: { idx: number; fecha: string }[]): string => {
   let text = `📅 *Próximas fechas disponibles:*\n\n`;
@@ -160,7 +155,7 @@ async function handleInicio(session: UserSession, input: string): Promise<string
     }
   }
 
-  return `👋 ¡Hola, ${nombre}! Bienvenido a *MiTurno* 💈\n\n${MENU_TEXT}`;
+  return buildMainMenu(nombre);
 }
 
 async function handlerSelectBarber(session: UserSession, input: string): Promise<string> {
