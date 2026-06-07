@@ -6,8 +6,10 @@ agrega el nucleo web del plan de implementacion.
 
 ## Alcance implementado
 
-- Sesion JWT en cookie `HttpOnly`: registro, login, refresh, perfil y cambio
-  de contrasena.
+- Sesion JWT: registro, login, refresh, perfil y cambio de contrasena. El token
+  se devuelve en el cuerpo (`{ token, perfil, rol }`) y tambien en una cookie
+  `HttpOnly`; las rutas protegidas aceptan `Authorization: Bearer <token>` o la
+  cookie.
 - Servicios del barbero con validacion y baja logica.
 - Horario semanal y dias libres.
 - Calculo de disponibilidad, creacion y administracion de citas.
@@ -15,6 +17,9 @@ agrega el nucleo web del plan de implementacion.
 - Anticipo del 50% con link Wompi cuando hay credenciales configuradas.
 - Webhooks de WhatsApp y pagos; el webhook de Wompi valida la firma y el monto
   antes de confirmar una cita.
+- Recordatorios automaticos de citas por WhatsApp (24h y 2h antes de la cita)
+  mediante un job programado con reintentos. La zona horaria se fija en
+  `America/Bogota` para que los recordatorios se disparen a la hora local.
 - Cabeceras de seguridad, CORS restringido, rate limiting y manejo uniforme de
   errores.
 
@@ -56,9 +61,13 @@ El panel actual consume los aliases en espanol bajo `/api`:
 | GET/POST/PATCH/DELETE | `/api/servicios` | Servicios |
 | GET/PATCH | `/api/horario` | Horario semanal |
 | GET/POST/DELETE | `/api/horario/dias-libres` | Excepciones |
-| POST | `/api/citas/disponibilidad` | Slots disponibles |
-| POST | `/api/citas` | Reservar y crear anticipo |
+| POST | `/api/citas/disponibilidad` | Slots disponibles (publico) |
 | GET/PATCH | `/api/citas` | Gestion de agenda |
+| GET | `/api/citas/stats` | Metricas de la agenda |
+| GET | `/api/clientes` | Clientes de la agenda |
+| GET | `/api/pagos` | Pagos del barbero |
+| POST | `/api/pagos/link` | Crear link de anticipo Wompi |
+| POST | `/api/webhook/payment` | Webhook de pagos (Wompi) |
 
 Los endpoints equivalentes del plan se exponen en `/api/v1`:
 
