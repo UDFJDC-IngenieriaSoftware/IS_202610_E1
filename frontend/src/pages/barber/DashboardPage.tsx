@@ -16,6 +16,7 @@ import { Stat }           from '../../components/molecules/Stat'
 import { QuickAction }    from '../../components/molecules/QuickAction'
 import { StatusPill }     from '../../components/atoms/StatusPill'
 import { Icon }           from '../../components/atoms/Icon'
+import { WhatsAppIcon }   from '../../components/atoms/WhatsAppIcon'
 import { useAllCitas }    from '../../hooks/useCitas'
 import { useAuth }        from '../../hooks/useAuth'
 import { HOY_ISO, buildWeek } from '../../utils/dates'
@@ -244,7 +245,7 @@ export function DashboardPage() {
                   onClick={() => navigate('/panel/horario')}
                 />
                 <QuickAction
-                  icon="whatsapp"
+                  iconNode={<WhatsAppIcon size={18} />}
                   label="Mensaje masivo"
                   sub="Notificar a clientes"
                   onClick={() => {}}

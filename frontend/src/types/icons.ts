@@ -49,7 +49,7 @@ export type IconName =
   | 'notifications'
   | 'logout'
   | 'settings'
-  | 'whatsapp'
+  | 'chat'
   | 'star'
   | 'arrow_right'
   | 'circle'

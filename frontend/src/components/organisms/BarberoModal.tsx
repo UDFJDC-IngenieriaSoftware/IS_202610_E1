@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { Modal }       from './Modal'
 import { StatusPill }  from '../atoms/StatusPill'
 import { Icon }        from '../atoms/Icon'
+import { WhatsAppIcon } from '../atoms/WhatsAppIcon'
 import { fmtCOP, initials } from '../../utils/format'
 import { PLANES_MOCK }      from '../../services/mocks/planes.mock'
 import { ESTADO_PAGO_META } from '../../types/estados'
@@ -144,7 +145,7 @@ export function BarberoModal({ barbero, pagos, onClose }: BarberoModalProps) {
       {/* Acciones */}
       <div className="modal-foot modal-foot--3">
         <button className="btn ghost" type="button">
-          <Icon name="whatsapp" size={15} /> WhatsApp
+          <WhatsAppIcon size={15} /> WhatsApp
         </button>
         <button className="btn ghost" type="button">
           <Icon name="edit" size={15} /> Cambiar plan

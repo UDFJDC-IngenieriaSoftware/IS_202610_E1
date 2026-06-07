@@ -9,7 +9,8 @@
 import { useCallback, useState } from 'react'
 import { Modal }      from './Modal'
 import { StatusPill } from '../atoms/StatusPill'
-import { Icon }       from '../atoms/Icon'
+import { Icon }           from '../atoms/Icon'
+import { WhatsAppIcon }   from '../atoms/WhatsAppIcon'
 import { fmtCOP, fmtFechaLarga, initials } from '../../utils/format'
 import type { Cita } from '../../types'
 
@@ -124,7 +125,7 @@ export function CitaModal({ cita, onClose, onMarcarCompletada, onCancelar }: Cit
           <Icon name="close" size={15} /> Cancelar cita
         </button>
         <button className="btn ghost" type="button">
-          <Icon name="whatsapp" size={15} /> Contactar
+          <WhatsAppIcon size={15} /> Contactar
         </button>
         <button
           className="btn primary"

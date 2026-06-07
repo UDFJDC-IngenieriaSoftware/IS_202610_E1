@@ -4,7 +4,8 @@
  * Placeholder de la sección de soporte (próximamente).
  */
 import { Topbar } from '../../components/organisms/Topbar'
-import { Icon }   from '../../components/atoms/Icon'
+import { Icon }         from '../../components/atoms/Icon'
+import { WhatsAppIcon } from '../../components/atoms/WhatsAppIcon'
 
 export function SoportePage() {
   return (
@@ -63,7 +64,7 @@ export function SoportePage() {
             }}
           >
             <button className="btn ghost" type="button">
-              <Icon name="whatsapp" size={15} /> Contactar barbero
+              <WhatsAppIcon size={15} /> Contactar barbero
             </button>
             <button className="btn primary" type="button">
               <Icon name="notifications" size={15} /> Enviar notificación

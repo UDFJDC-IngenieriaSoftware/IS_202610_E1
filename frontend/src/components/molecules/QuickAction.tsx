@@ -1,12 +1,13 @@
 /**
  * Molécula QuickAction — tarjeta de acción rápida con icono, título y subtítulo.
  */
-import { memo } from 'react'
+import { memo, type ReactNode } from 'react'
 import { Icon } from '../atoms/Icon'
 import type { IconName } from '../../types/icons'
 
 interface QuickActionProps {
-  icon: IconName
+  icon?: IconName
+  iconNode?: ReactNode
   label: string
   sub?: string
   onClick: () => void
@@ -14,6 +15,7 @@ interface QuickActionProps {
 
 export const QuickAction = memo(function QuickAction({
   icon,
+  iconNode,
   label,
   sub,
   onClick,
@@ -21,7 +23,7 @@ export const QuickAction = memo(function QuickAction({
   return (
     <button type="button" className="qa-card" onClick={onClick}>
       <span className="qa-icon">
-        <Icon name={icon} size={18} />
+        {iconNode ?? (icon && <Icon name={icon} size={18} />)}
       </span>
       <span className="qa-text">
         <span className="qa-label">{label}</span>
