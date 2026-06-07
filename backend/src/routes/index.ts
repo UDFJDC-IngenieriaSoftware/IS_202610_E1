@@ -100,6 +100,7 @@ function customerRoutes(): Router {
   router.get("/", asyncHandler(customers.listCustomers));
   router.get("/:id", asyncHandler(customers.getCustomer));
   router.patch("/:id", validate(customerSchemas.update), asyncHandler(customers.updateCustomer));
+  router.delete("/:id", asyncHandler(customers.deleteCustomer));
   return router;
 }
 

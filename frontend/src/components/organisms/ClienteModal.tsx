@@ -16,6 +16,7 @@ interface ClienteModalProps {
   cliente: ClienteConStats
   onClose: () => void
   onSave?: (id: string, data: Partial<Pick<ClienteConStats, 'nombres' | 'apellidos' | 'email'>>) => Promise<void>
+  onDelete?: (id: string) => Promise<void>
 }
 
 interface FormState {
@@ -24,11 +25,14 @@ interface FormState {
   email: string
 }
 
-export function ClienteModal({ cliente, onClose, onSave }: ClienteModalProps) {
+export function ClienteModal({ cliente, onClose, onSave, onDelete }: ClienteModalProps) {
   const uid = useId()
-  const [editing, setEditing] = useState(false)
-  const [saving,  setSaving]  = useState(false)
-  const [saveErr, setSaveErr] = useState('')
+  const [editing, setEditing]           = useState(false)
+  const [saving,  setSaving]            = useState(false)
+  const [saveErr, setSaveErr]           = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting,  setDeleting]        = useState(false)
+  const [deleteErr, setDeleteErr]       = useState('')
   const [form, setForm] = useState<FormState>({
     nombres:   cliente.nombres,
     apellidos: cliente.apellidos,
@@ -55,6 +59,18 @@ export function ClienteModal({ cliente, onClose, onSave }: ClienteModalProps) {
       setSaveErr('No se pudo guardar. Intenta de nuevo.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteErr('')
+    try {
+      await onDelete?.(cliente.id)
+      onClose()
+    } catch {
+      setDeleteErr('No se pudo eliminar. El cliente puede tener citas activas.')
+      setDeleting(false)
     }
   }
 
@@ -142,8 +158,49 @@ export function ClienteModal({ cliente, onClose, onSave }: ClienteModalProps) {
       </div>
 
       {!editing && (
-        <div className="modal-foot">
-          <button className="btn ghost" type="button" onClick={onClose}>Cerrar</button>
+        <div className="modal-foot" style={{ justifyContent: 'space-between' }}>
+          {onDelete && !confirmDelete && (
+            <button
+              className="btn danger-ghost"
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Icon name="delete" size={14} /> Eliminar
+            </button>
+          )}
+          {confirmDelete && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+              {deleteErr && (
+                <span className="field-error" style={{ fontSize: 12 }}>
+                  <Icon name="warning" size={12} /> {deleteErr}
+                </span>
+              )}
+              {!deleteErr && (
+                <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+                  ¿Confirmar eliminación?
+                </span>
+              )}
+              <button
+                className="btn danger"
+                type="button"
+                disabled={deleting}
+                aria-busy={deleting}
+                onClick={handleDelete}
+              >
+                {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+              </button>
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={() => { setConfirmDelete(false); setDeleteErr('') }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+          {!confirmDelete && (
+            <button className="btn ghost" type="button" onClick={onClose}>Cerrar</button>
+          )}
         </div>
       )}
     </Modal>

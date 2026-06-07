@@ -1,12 +1,24 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright Configuration
+ * Playwright Configuration — MI TURNO
  *
- * Tests: tests/e2e/**/*.spec.ts
- * Run: npm run test:e2e
+ * Proyectos:
+ *   setup     → auth.setup.ts: login real, guarda storageState
+ *   chromium  → tests UI del Panel Web (depende de setup)
+ *   firefox   → mismos tests UI en Firefox
+ *   api       → tests de API del backend (tests/e2e/api/*.spec.ts)
+ *
+ * Correr:
+ *   npx playwright test                    # todos
+ *   npx playwright test --project=api      # solo API
+ *   npx playwright test --project=chromium # solo UI Chrome
+ *   npx playwright test tests/e2e/panel/   # solo tests del panel
  */
 export default defineConfig({
+  globalSetup:    './tests/e2e/global-setup.ts',
+  globalTeardown: './tests/e2e/global-teardown.ts',
+
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -27,46 +39,45 @@ export default defineConfig({
   },
 
   projects: [
+    // ── 1. Setup: crea la sesión autenticada ─────────────────────────────────
+    {
+      name: 'setup',
+      testMatch: '**/auth.setup.ts',
+    },
+
+    // ── 2. UI tests – Panel Web ───────────────────────────────────────────────
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/barbero.json',
+      },
+      dependencies: ['setup'],
+      testIgnore: ['**/api/**', '**/auth.setup.ts'],
     },
-
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: 'playwright/.auth/barbero.json',
+      },
+      dependencies: ['setup'],
+      testIgnore: ['**/api/**', '**/auth.setup.ts'],
     },
 
+    // ── 3. API tests – Backend ────────────────────────────────────────────────
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    // Test against mobile viewports
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
-
-    // Test against brand new browser versions
-    {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+      name: 'api',
+      use: {
+        baseURL: process.env.PLAYWRIGHT_API_BASE_URL || 'http://localhost:3000',
+      },
+      testMatch: ['**/api/**/*.spec.ts'],
     },
   ],
 
   webServer: {
-    command: 'npm run dev',
+    // Ejecutar desde la raíz del repo; el frontend está en ./frontend/
+    command: 'cd frontend && npx vite',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },

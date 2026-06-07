@@ -7,28 +7,40 @@ import {
   deleteServicio,
 } from '../../src/services/servicios.service'
 
-describe('servicios.service', () => {
-  const mockServicio = {
-    id: 's1',
-    nombre: 'Corte de Cabello',
-    descripcion: 'Corte estándar',
-    precio: 25000,
-    duracion: 30,
-    activo: true,
-  }
+const { mockRequest } = vi.hoisted(() => ({ mockRequest: vi.fn() }))
 
+vi.mock('../../src/services/apiClient', () => ({
+  USE_MOCKS: false,
+  mockDelay: (v: any) => Promise.resolve(v),
+  request: mockRequest,
+}))
+
+const mockServicio = {
+  id: 's1',
+  nombre: 'Corte de Cabello',
+  descripcion: 'Corte estándar',
+  precio: 25000,
+  duracion: 30,
+  activo: true,
+}
+
+describe('servicios.service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   describe('listServicios', () => {
     it('should return servicios list', async () => {
+      mockRequest.mockResolvedValueOnce([mockServicio])
+
       const result = await listServicios()
 
       expect(Array.isArray(result)).toBe(true)
     })
 
     it('should return servicios with expected properties', async () => {
+      mockRequest.mockResolvedValueOnce([mockServicio])
+
       const result = await listServicios()
 
       if (result.length > 0) {
@@ -41,6 +53,8 @@ describe('servicios.service', () => {
 
   describe('listServiciosActivos', () => {
     it('should return only active servicios', async () => {
+      mockRequest.mockResolvedValueOnce([mockServicio])
+
       const result = await listServiciosActivos()
 
       expect(Array.isArray(result)).toBe(true)
@@ -57,6 +71,7 @@ describe('servicios.service', () => {
         duracion: 45,
         activo: true,
       }
+      mockRequest.mockResolvedValueOnce({ ...newServicio, id: 's-new' })
 
       const result = await createServicio(newServicio)
 
@@ -73,6 +88,7 @@ describe('servicios.service', () => {
         duracion: 20,
         activo: true,
       }
+      mockRequest.mockResolvedValueOnce({ ...newServicio, id: 's-new2' })
 
       const result = await createServicio(newServicio)
 
@@ -87,6 +103,7 @@ describe('servicios.service', () => {
   describe('updateServicio', () => {
     it('should update servicio price', async () => {
       const updateData = { precio: 30000 }
+      mockRequest.mockResolvedValueOnce({ ...mockServicio, ...updateData })
 
       const result = await updateServicio('s1', updateData)
 
@@ -95,10 +112,8 @@ describe('servicios.service', () => {
     })
 
     it('should handle partial updates', async () => {
-      const updateData = {
-        nombre: 'Corte Premium',
-        precio: 45000,
-      }
+      const updateData = { nombre: 'Corte Premium', precio: 45000 }
+      mockRequest.mockResolvedValueOnce({ ...mockServicio, ...updateData })
 
       const result = await updateServicio('s1', updateData)
 
@@ -109,6 +124,7 @@ describe('servicios.service', () => {
 
     it('should handle status changes', async () => {
       const updateData = { activo: false }
+      mockRequest.mockResolvedValueOnce({ ...mockServicio, ...updateData })
 
       const result = await updateServicio('s1', updateData)
 
@@ -118,12 +134,16 @@ describe('servicios.service', () => {
 
   describe('deleteServicio', () => {
     it('should complete without error', async () => {
+      mockRequest.mockResolvedValueOnce(undefined)
+
       expect(async () => {
         await deleteServicio('s1')
       }).not.toThrow()
     })
 
     it('should handle different servicio IDs', async () => {
+      mockRequest.mockResolvedValueOnce(undefined)
+
       expect(async () => {
         await deleteServicio('s5')
       }).not.toThrow()

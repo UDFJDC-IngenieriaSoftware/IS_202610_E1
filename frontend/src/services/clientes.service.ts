@@ -43,3 +43,13 @@ export async function updateCliente(
     body: JSON.stringify(data),
   })
 }
+
+export async function deleteCliente(id: string): Promise<void> {
+  if (USE_MOCKS) {
+    const idx = CLIENTES_MOCK.findIndex((c) => c.id === id)
+    if (idx === -1) throw new Error(`Cliente ${id} no encontrado`)
+    await mockDelay(undefined)
+    return
+  }
+  await request<void>(`/clientes/${id}`, { method: 'DELETE' })
+}

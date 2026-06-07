@@ -13,7 +13,7 @@ import { SearchInput }   from '../../components/molecules/SearchInput'
 import { Icon }          from '../../components/atoms/Icon'
 import { useClientes }   from '../../hooks/useClientes'
 import { useDebounce }   from '../../hooks/useDebounce'
-import { updateCliente } from '../../services/clientes.service'
+import { updateCliente, deleteCliente } from '../../services/clientes.service'
 import { fmtFechaCorta } from '../../utils/format'
 import type { ClienteConStats } from '../../types'
 
@@ -78,6 +78,12 @@ export function ClientesPage() {
     await updateCliente(id, datos)
     refetch()
     setClienteAbierto((prev) => (prev?.id === id ? { ...prev, ...datos } : prev))
+  }, [refetch])
+
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteCliente(id)
+    setClienteAbierto(null)
+    refetch()
   }, [refetch])
 
   if (loading && clientes.length === 0) {
@@ -158,6 +164,7 @@ export function ClientesPage() {
           cliente={clienteAbierto}
           onClose={handleClose}
           onSave={handleSave}
+          onDelete={handleDelete}
         />
       )}
     </div>

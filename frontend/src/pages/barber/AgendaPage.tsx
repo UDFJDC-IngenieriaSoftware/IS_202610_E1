@@ -105,7 +105,9 @@ const MonthCell = memo(function MonthCell({
 })
 
 /* ── Componente principal ─────────────────────────────────────────── */
-type VistaAgenda = 'semana' | 'mes'
+type VistaAgenda = 'dia' | 'semana' | 'mes'
+
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export function AgendaPage() {
   const { data: allCitas, loading } = useAllCitas()
@@ -117,6 +119,7 @@ export function AgendaPage() {
   const onCloseCita = useCallback(() => setCita(null), [])
 
   /* Navegación */
+  const navDia    = useCallback((dir: -1 | 1) => setIsoRef((r) => addDays(r, dir)), [])
   const navSemana = useCallback((dir: -1 | 1) => setIsoRef((r) => addDays(r, dir * 7)), [])
   const navMes    = useCallback((dir: -1 | 1) => {
     const d = new Date(isoRef + 'T12:00:00')
@@ -149,10 +152,33 @@ export function AgendaPage() {
   /* Grilla del mes */
   const monthGrid = useMemo(() => buildMonthGrid(isoRef), [isoRef])
 
+  /* Día de referencia (para vista día) */
+  const refDate   = useMemo(() => new Date(isoRef + 'T12:00:00'), [isoRef])
+  const dayName   = DAY_NAMES[refDate.getDay()]
+  const dayNum    = refDate.getDate()
+  const dayCitas  = useMemo(
+    () => (byDay[isoRef] ?? []).sort((a, b) => a.hora.localeCompare(b.hora)),
+    [byDay, isoRef],
+  )
+
   /* Etiqueta de cabecera */
   const headerLabel = vista === 'semana'
     ? `${week[0].num} al ${week[6].num} de ${monthName(isoRef)} · ${yearOf(isoRef)}`
-    : `${monthName(isoRef).charAt(0).toUpperCase()}${monthName(isoRef).slice(1)} ${yearOf(isoRef)}`
+    : vista === 'mes'
+      ? `${monthName(isoRef).charAt(0).toUpperCase()}${monthName(isoRef).slice(1)} ${yearOf(isoRef)}`
+      : `${dayName} ${dayNum} de ${monthName(isoRef)} · ${yearOf(isoRef)}`
+
+  /* Callbacks de navegación según vista activa */
+  const navPrev = useCallback(() => {
+    if (vista === 'dia') navDia(-1)
+    else if (vista === 'semana') navSemana(-1)
+    else navMes(-1)
+  }, [vista, navDia, navSemana, navMes])
+  const navNext = useCallback(() => {
+    if (vista === 'dia') navDia(1)
+    else if (vista === 'semana') navSemana(1)
+    else navMes(1)
+  }, [vista, navDia, navSemana, navMes])
 
   return (
     <div className="page">
@@ -161,8 +187,15 @@ export function AgendaPage() {
         subtitle={headerLabel}
         actions={
           <>
-            {/* Segmented: semana / mes */}
+            {/* Segmented: día / semana / mes */}
             <div className="seg" role="group" aria-label="Vista de agenda">
+              <button
+                className={vista === 'dia' ? 'is-on' : ''}
+                onClick={() => setVista('dia')}
+                aria-pressed={vista === 'dia'}
+              >
+                Día
+              </button>
               <button
                 className={vista === 'semana' ? 'is-on' : ''}
                 onClick={() => setVista('semana')}
@@ -183,16 +216,16 @@ export function AgendaPage() {
             <div className="seg-nav">
               <IconButton
                 icon="chevron_left"
-                label="Semana anterior"
-                onClick={() => vista === 'semana' ? navSemana(-1) : navMes(-1)}
+                label={vista === 'dia' ? 'Día anterior' : vista === 'semana' ? 'Semana anterior' : 'Mes anterior'}
+                onClick={navPrev}
               />
               <button className="btn ghost-sm" type="button" onClick={irHoy}>
                 Hoy
               </button>
               <IconButton
                 icon="chevron_right"
-                label="Semana siguiente"
-                onClick={() => vista === 'semana' ? navSemana(1) : navMes(1)}
+                label={vista === 'dia' ? 'Día siguiente' : vista === 'semana' ? 'Semana siguiente' : 'Mes siguiente'}
+                onClick={navNext}
               />
             </div>
 
@@ -219,6 +252,57 @@ export function AgendaPage() {
             />
           ))}
         </div>
+
+        {/* ── Vista día ────────────────────────────────────────── */}
+        {vista === 'dia' && (
+          <div className="cal-card">
+            <div
+              className="cal-grid cal-grid--day"
+              style={{ '--rowH': `${ROW_H}px` } as React.CSSProperties}
+            >
+              {/* Header */}
+              <div className="cal-corner" aria-hidden="true" />
+              <div className={`cal-dayhead${isoRef === HOY_ISO ? ' is-today' : ''}`}>
+                <div className="cdh-day">{dayName}</div>
+                <div className="cdh-num">{dayNum}</div>
+              </div>
+
+              {/* Gutter */}
+              <div className="cal-gutter" aria-hidden="true">
+                {HOURS.map((h) => (
+                  <div key={h} className="cal-hour">
+                    <span>{String(h).padStart(2, '0')}:00</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Columna única */}
+              <div
+                className={`cal-col${isoRef === HOY_ISO ? ' is-today' : ''}`}
+                role="gridcell"
+                aria-label={isoRef}
+              >
+                {HOURS.map((h) => (
+                  <div key={h} className="cal-line" aria-hidden="true" />
+                ))}
+                {isoRef === HOY_ISO && (() => {
+                  const now = new Date()
+                  const topNow = eventTop(
+                    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+                  )
+                  return (
+                    <div className="cal-now" style={{ top: topNow }} aria-hidden="true">
+                      <span className="cal-now-dot" />
+                    </div>
+                  )
+                })()}
+                {dayCitas.map((c) => (
+                  <CalEvent key={c.id} cita={c} onOpen={onOpenCita} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Vista semana ─────────────────────────────────────── */}
         {vista === 'semana' && (

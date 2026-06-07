@@ -14,11 +14,16 @@ export interface BarberoAttributes {
   ciudad?: string | null;
   rol: "barbero" | "admin";
   plan: "solo" | "pro" | "estudio";
+  plazoCancelacion?: number | null;
+  plazoReprogramacion?: number | null;
+  mensajeBienvenida?: string | null;
+  mensajeConfirmacion?: string | null;
+  mensajeRecordatorio?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface BarberoCreationAttributes extends Optional<BarberoAttributes, "id" | "activo" | "direccion" | "email" | "passwordHash" | "barberia" | "ciudad" | "rol" | "plan"> {}
+export interface BarberoCreationAttributes extends Optional<BarberoAttributes, "id" | "activo" | "direccion" | "email" | "passwordHash" | "barberia" | "ciudad" | "rol" | "plan" | "plazoCancelacion" | "plazoReprogramacion" | "mensajeBienvenida" | "mensajeConfirmacion" | "mensajeRecordatorio"> {}
 
 class Barbero extends Model<BarberoAttributes, BarberoCreationAttributes> implements BarberoAttributes {
   declare public id: string;
@@ -33,6 +38,11 @@ class Barbero extends Model<BarberoAttributes, BarberoCreationAttributes> implem
   declare public ciudad: string | null;
   declare public rol: "barbero" | "admin";
   declare public plan: "solo" | "pro" | "estudio";
+  declare public plazoCancelacion: number | null;
+  declare public plazoReprogramacion: number | null;
+  declare public mensajeBienvenida: string | null;
+  declare public mensajeConfirmacion: string | null;
+  declare public mensajeRecordatorio: string | null;
 
   declare public readonly createdAt: Date;
   declare public readonly updatedAt: Date;
@@ -96,6 +106,31 @@ Barbero.init(
       type: DataTypes.STRING,
       defaultValue: "solo",
       allowNull: false,
+    },
+    plazoCancelacion: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "plazo_cancelacion",
+    },
+    plazoReprogramacion: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "plazo_reprogramacion",
+    },
+    mensajeBienvenida: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "mensaje_bienvenida",
+    },
+    mensajeConfirmacion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "mensaje_confirmacion",
+    },
+    mensajeRecordatorio: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "mensaje_recordatorio",
     },
   },
   {

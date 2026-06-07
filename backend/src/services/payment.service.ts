@@ -253,33 +253,35 @@ export class PaymentService {
         if (estado === "exitoso") {
           await cita.update({ estado: "confirmada" });
 
-          // Send confirmation notification
-          try {
-            if (cita.horario && cita.horario.servicio) {
-              const barbero = await Barbero.findByPk(cita.horario.servicio.idBarbero);
-              const barberName = barbero
-                ? `${barbero.nombres} ${barbero.apellidos}`.trim()
-                : "Barbero";
+          // Send confirmation notification — fire-and-forget (must not block the webhook response)
+          Promise.resolve().then(async () => {
+            try {
+              if (cita.horario && cita.horario.servicio) {
+                const barbero = await Barbero.findByPk(cita.horario.servicio.idBarbero);
+                const barberName = barbero
+                  ? `${barbero.nombres} ${barbero.apellidos}`.trim()
+                  : "Barbero";
 
-              const dateTime = `${cita.horario.fecha} ${cita.horario.horaInicio.slice(0, 5)}`;
-              await notificationService.sendBookingConfirmation({
-                customerName: `${cliente.nombres} ${cliente.apellidos}`.trim(),
-                customerPhone: cliente.celular,
-                barberName,
-                serviceName: cita.horario.servicio.nombre,
-                dateTime,
-                bookingId: cita.id as any,
-              });
+                const dateTime = `${cita.horario.fecha} ${cita.horario.horaInicio.slice(0, 5)}`;
+                await notificationService.sendBookingConfirmation({
+                  customerName: `${cliente.nombres} ${cliente.apellidos}`.trim(),
+                  customerPhone: cliente.celular,
+                  barberName,
+                  serviceName: cita.horario.servicio.nombre,
+                  dateTime,
+                  bookingId: cita.id as any,
+                });
+              }
+            } catch (error) {
+              logger.error("Error sending booking confirmation", { error: String(error) });
             }
-          } catch (error) {
-            logger.error("Error sending booking confirmation", { error: String(error) });
-          }
 
-          // Keep legacy WhatsApp notification for backwards compatibility
-          await whatsappService.sendText(
-            cliente.celular,
-            `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
-          ).catch(logger.error);
+            // Keep legacy WhatsApp notification for backwards compatibility
+            whatsappService.sendText(
+              cliente.celular,
+              `✅ ¡Pago Recibido por PSE! Tu cita para el servicio ha sido agendada con éxito. ¡Te esperamos!`
+            ).catch(logger.error);
+          });
         } else if (estado === "fallido") {
           await cita.update({ estado: "cancelada" });
           await Horario.update(
