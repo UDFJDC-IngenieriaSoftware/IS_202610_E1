@@ -1,0 +1,87 @@
+services:
+  # ─── BACKEND SERVICE (Node.js - Dev Override) ───────────────────────────
+  backend:
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.development
+    environment:
+      - TZ=America/Bogota
+      - PORT=3000
+      - NODE_ENV=development
+      - DB_HOST=database
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_PORT=5432
+      # Rutas de Puppeteer configuradas en el Dockerfile para el bot local
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    volumes:
+      - ./backend:/app # Habilita live-reload (monta código local al contenedor)
+      # node_modules con nombre (no anónimo) para que el target `deps` del Makefile
+      # pueda sincronizarlo vía un contenedor efímero `compose run` que comparte
+      # este mismo volumen. Evita errores tipo "Cannot find module" al agregar deps.
+      - backend_node_modules:/app/node_modules
+    ports:
+      - "3000:3000" # Acceso directo al backend si se desea
+
+  # ─── DATABASE SERVICE (PostgreSQL - Dev Override) ───────────────────────
+  database:
+    restart: unless-stopped
+    ports:
+      - "5433:5432" # Evita colision con otros PostgreSQL locales
+    environment:
+      - TZ=America/Bogota
+      - PGTZ=America/Bogota
+      - POSTGRES_DB=bot_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password
+
+  # ─── REDIS SERVICE (Dev Override) ───────────────────────────────────────
+  redis:
+    restart: unless-stopped
+    ports:
+      - "6379:6379" # Permite conexión desde el host (ej. redis-cli, RedisInsight)
+
+  # ─── FRONTEND SERVICE (Vite Dev Server - Dev Override) ──────────────────
+  frontend:
+    image: node:20-slim
+    container_name: mi_turno_frontend
+    restart: unless-stopped
+    working_dir: /app
+    # Instala pnpm + arranca el servidor de Vite accesible desde la red del compose
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm dev --host 0.0.0.0"
+    environment:
+      - VITE_API_URL=/api
+      - VITE_USE_MOCKS=false
+    volumes:
+      - ./frontend:/app                # live-reload del código fuente
+      - /app/node_modules              # preserva node_modules del contenedor
+    ports:
+      - "5173:5173"                   # acceso directo al dev server si se desea
+
+  # ─── NGINX SERVICE (Dev Override — apunta al Vite dev server) ───────────
+  nginx:
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # ─── PGADMIN SERVICE (PostgreSQL GUI - Dev Only) ────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: whatsapp_bot_pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80" # Interfaz web de pgAdmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - database
+
+# ─── VOLUMES CONFIGURATION (Dev Only) ─────────────────────────────────────
+volumes:
+  pgadmin_data:
+    driver: local
+  backend_node_modules:
+    driver: local

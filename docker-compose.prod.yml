@@ -1,0 +1,42 @@
+services:
+  # ─── BACKEND SERVICE (Node.js - Prod Override) ──────────────────────────
+  backend:
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - TZ=America/Bogota
+      - PORT=3000
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Conexión a la base de datos interna del compose (servicio "database")
+      - DB_HOST=database
+      - DB_PORT=5432
+      - POSTGRES_DB=bot_db_prod
+      - POSTGRES_USER=postgres_prod
+      - POSTGRES_PASSWORD=password_seguro_produccion_cambiame
+      # En producción, Puppeteer también usa el Chromium instalado en el contenedor
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+  # ─── DATABASE SERVICE (PostgreSQL - Prod Override) ──────────────────────
+  database:
+    restart: always
+    # IMPORTANTE: No mapeamos el puerto 5432:5432 hacia el host exterior para mayor seguridad.
+    # Los contenedores se comunican internamente de forma privada y segura.
+    environment:
+      - TZ=America/Bogota
+      - PGTZ=America/Bogota
+      - POSTGRES_DB=bot_db_prod
+      - POSTGRES_USER=postgres_prod
+      - POSTGRES_PASSWORD=password_seguro_produccion_cambiame  # Reemplazar con contraseña robusta
+
+  # ─── REDIS SERVICE (Prod Override) ──────────────────────────────────────
+  # No exponemos el puerto al host: solo accesible dentro de la red interna del compose.
+  redis:
+    restart: always
+
+  # ─── NGINX SERVICE (Reverse Proxy - Prod Override) ──────────────────────
+  nginx:
+    restart: always

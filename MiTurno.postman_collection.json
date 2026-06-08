@@ -1,0 +1,655 @@
+{
+	"info": {
+		"_postman_id": "2b9264fa-158a-4d29-bdf3-88c9f5383568",
+		"name": "MiTurno API",
+		"description": "Colección de endpoints para probar el backend y el chatbot del proyecto MiTurno (desarrollo y producción).\n\n## Uso\n\nDefine la variable `base_url` según el entorno:\n\n- **Local (backend directo):** `http://localhost:3000`\n- **EC2 por IP:** `http://<IP_PUBLICA>` (nginx en el puerto 80)\n- **EC2 por túnel HTTPS:** `https://<aleatorio>.trycloudflare.com`\n\nLa API REST vive bajo `/api/...` (alias en español) y `/api/v1/...` (plan). En EC2, nginx solo enruta `/api/` al backend; por eso los webhooks usan `/api/v1/webhook/whatsapp` (el `/webhook` en la raíz solo funciona contra el backend directo en local).\n\n## Autenticación\n\nEjecuta **Auth → Login** (o Register): un script de test guarda el `token` JWT en la variable de colección. El resto de requests lo envían automáticamente como `Authorization: Bearer {{token}}`.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "General",
+			"item": [
+				{
+					"name": "Health Check / Estado",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Verifica que el backend está levantado. Retorna `{\"status\":\"ok\",\"service\":\"miturno-api\"}`.\n\nNota: en EC2 vía nginx esta ruta NO se proxea al backend (cae al SPA); funciona contra el backend directo (local `http://localhost:3000`). Para comprobar el backend en EC2, usa cualquier endpoint `/api/...`."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const j = pm.response.json();",
+									"if (j && j.token) {",
+									"  pm.collectionVariables.set(\"token\", j.token);",
+									"  console.log(\"token guardado\");",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\",\n  \"nombres\": \"Test\",\n  \"apellidos\": \"Postman\",\n  \"celular\": \"3001112233\",\n  \"barberia\": \"Barberia Test\",\n  \"ciudad\": \"Bogota\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Crea una cuenta de barbero. Devuelve `token`, `perfil` y `rol`. El script de test guarda el token en la colección."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const j = pm.response.json();",
+									"if (j && j.token) {",
+									"  pm.collectionVariables.set(\"token\", j.token);",
+									"  console.log(\"token guardado\");",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Inicia sesión y guarda el `token` JWT en la variable de colección (script de test)."
+					},
+					"response": []
+				},
+				{
+					"name": "Me (perfil)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Perfil del usuario autenticado. Requiere `token`."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Servicios",
+			"item": [
+				{
+					"name": "Listar servicios",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/servicios",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"servicios"
+							]
+						},
+						"description": "Lista los servicios del barbero autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear servicio",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Corte clásico\",\n  \"descripcion\": \"Corte con máquina y tijera\",\n  \"duracion\": 30,\n  \"precio\": 25000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/servicios",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"servicios"
+							]
+						},
+						"description": "Crea un servicio. `duracion` en minutos, `precio` numérico."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Citas",
+			"item": [
+				{
+					"name": "Disponibilidad",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"idServicio\": \"{{service_id}}\",\n  \"fecha\": \"2026-06-23\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/citas/disponibilidad",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"disponibilidad"
+							]
+						},
+						"description": "Slots disponibles para un servicio en una fecha. Endpoint público (no requiere token)."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar citas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas"
+							]
+						},
+						"description": "Agenda del barbero autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Estadísticas de citas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/citas/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"citas",
+								"stats"
+							]
+						},
+						"description": "Métricas de la agenda (confirmadas, pendientes, etc.)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Clientes",
+			"item": [
+				{
+					"name": "Listar clientes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/clientes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clientes"
+							]
+						},
+						"description": "Clientes vinculados a la agenda del barbero."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Pagos",
+			"item": [
+				{
+					"name": "Listar pagos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/pagos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pagos"
+							]
+						},
+						"description": "Lista los pagos del barbero autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Crear link de pago",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": 1,\n  \"amount\": 12500,\n  \"method\": \"card\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pagos/link",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pagos",
+								"link"
+							]
+						},
+						"description": "Crea el link de anticipo en Wompi. `method`: pse | card | transfer. Requiere credenciales Wompi configuradas en el backend."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Webhook (Meta WhatsApp Cloud API)",
+			"item": [
+				{
+					"name": "Verificación del Webhook (GET)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/webhook/whatsapp?hub.mode=subscribe&hub.verify_token={{verify_token}}&hub.challenge=CHALLENGE_ACCEPTED",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhook",
+								"whatsapp"
+							],
+							"query": [
+								{
+									"key": "hub.mode",
+									"value": "subscribe"
+								},
+								{
+									"key": "hub.verify_token",
+									"value": "{{verify_token}}"
+								},
+								{
+									"key": "hub.challenge",
+									"value": "CHALLENGE_ACCEPTED"
+								}
+							]
+						},
+						"description": "Simula la petición GET de Meta para verificar el webhook. Usa la variable `verify_token`.\n\nEn local con backend directo también responde en `{{base_url}}/webhook`."
+					},
+					"response": []
+				},
+				{
+					"name": "Simular Mensaje Entrante - Hola (POST)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"1234567890\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15550000000\",\n              \"phone_number_id\": \"1234567890\"\n            },\n            \"contacts\": [\n              {\n                \"profile\": {\n                  \"name\": \"Andrés\"\n                },\n                \"wa_id\": \"573001234567\"\n              }\n            ],\n            \"messages\": [\n              {\n                \"from\": \"573001234567\",\n                \"id\": \"ABGGFlA5Fpa1AhAL37EBqbg123456\",\n                \"timestamp\": \"1672531199\",\n                \"text\": {\n                  \"body\": \"hola\"\n                },\n                \"type\": \"text\"\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/webhook/whatsapp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhook",
+								"whatsapp"
+							]
+						},
+						"description": "Payload simulando que un usuario envía \"hola\". Dispara el menú principal del bot."
+					},
+					"response": []
+				},
+				{
+					"name": "Simular Selección del Menú - Opción 1: Horario (POST)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"1234567890\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15550000000\",\n              \"phone_number_id\": \"1234567890\"\n            },\n            \"contacts\": [\n              {\n                \"profile\": {\n                  \"name\": \"Andrés\"\n                },\n                \"wa_id\": \"573001234567\"\n              }\n            ],\n            \"messages\": [\n              {\n                \"from\": \"573001234567\",\n                \"id\": \"ABGGFlA5Fpa1AhAL37EBqbg123456\",\n                \"timestamp\": \"1672531199\",\n                \"text\": {\n                  \"body\": \"1\"\n                },\n                \"type\": \"text\"\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/webhook/whatsapp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhook",
+								"whatsapp"
+							]
+						},
+						"description": "Texto \"1\" para solicitar los horarios de atención al bot."
+					},
+					"response": []
+				},
+				{
+					"name": "Simular Selección del Menú - Opción 2: Precios (POST)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"object\": \"whatsapp_business_account\",\n  \"entry\": [\n    {\n      \"id\": \"1234567890\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15550000000\",\n              \"phone_number_id\": \"1234567890\"\n            },\n            \"contacts\": [\n              {\n                \"profile\": {\n                  \"name\": \"Andrés\"\n                },\n                \"wa_id\": \"573001234567\"\n              }\n            ],\n            \"messages\": [\n              {\n                \"from\": \"573001234567\",\n                \"id\": \"ABGGFlA5Fpa1AhAL37EBqbg123456\",\n                \"timestamp\": \"1672531199\",\n                \"text\": {\n                  \"body\": \"2\"\n                },\n                \"type\": \"text\"\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/webhook/whatsapp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"webhook",
+								"whatsapp"
+							]
+						},
+						"description": "Texto \"2\" para consultar los precios/planes al bot."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Webhook (Wompi Pagos)",
+			"item": [
+				{
+					"name": "Evento transaction.updated (POST)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"event\": \"transaction.updated\",\n  \"data\": {\n    \"transaction\": {\n      \"id\": \"12345-1700000000-12345\",\n      \"status\": \"APPROVED\",\n      \"amount_in_cents\": 1250000,\n      \"reference\": \"REEMPLAZAR_CON_REFERENCIA\",\n      \"payment_link_id\": \"REEMPLAZAR_CON_PAYMENT_LINK_ID\"\n    }\n  },\n  \"sent_at\": \"2026-06-07T00:00:00.000Z\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/webhook/payment",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"webhook",
+								"payment"
+							]
+						},
+						"description": "Simula el webhook de Wompi `transaction.updated`. En producción, Wompi firma el evento con el header `X-Event-Checksum` (la verificación está controlada por `verifyEvent` en `payment.service.ts`). Ajusta `reference`/`payment_link_id` para que coincidan con un pago real."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "test.postman@miturno.dev",
+			"type": "string"
+		},
+		{
+			"key": "test_password",
+			"value": "test1234",
+			"type": "string"
+		},
+		{
+			"key": "service_id",
+			"value": "b0e86958-8686-4e38-967a-0e7845ef2001",
+			"type": "string"
+		},
+		{
+			"key": "verify_token",
+			"value": "tu_token_de_verificacion_aqui",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,4 @@
+/* Entry point de estilos — solo carga los tokens y el reset global.
+   Cada layout importa su propio CSS adicional (panel.css, public.css, admin.css).
+*/
+@import './styles/base.css';

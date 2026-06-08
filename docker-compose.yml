@@ -1,0 +1,62 @@
+services:
+  # ─── BACKEND SERVICE (Node.js) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mi_turno_backend
+    volumes:
+      - backend_wwebjs_auth:/app/.wwebjs_auth     # Persistencia para no tener que escanear el QR cada vez
+      - backend_wwebjs_cache:/app/.wwebjs_cache
+    depends_on:
+      - database
+      - redis
+
+  # ─── DATABASE SERVICE (PostgreSQL) ──────────────────────────────────────
+  database:
+    image: postgres:16-alpine
+    container_name: mi_turno_database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ─── REDIS SERVICE (Sesiones de usuario / cache) ────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: mi_turno_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  # ─── FRONTEND SERVICE (React SPA) ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mi_turno_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # ─── NGINX SERVICE (Reverse Proxy) ──────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: whatsapp_bot_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+      - frontend
+
+# ─── VOLUMES CONFIGURATION ────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  backend_wwebjs_auth:
+    driver: local
+  backend_wwebjs_cache:
+    driver: local
+  redis_data:
+    driver: local
